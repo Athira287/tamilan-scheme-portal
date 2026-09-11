@@ -101,48 +101,81 @@ import base64
 import re
 import os
 
-# 3. AUTHENTICATION SESSION STATE
+# 3. AUTHENTICATION SESSION STATE & USER DATABASE
+if "user_db" not in st.session_state:
+    # Default admin account
+    st.session_state["user_db"] = {"admin": "sih2026"}
+
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
+# --- FORGOT PASSWORD MODAL ---
 @st.dialog("🔑 Reset Your Password")
 def reset_password_dialog():
-    st.write("Enter your registered Aadhaar / Mobile number to receive an OTP.")
-    user_input = st.text_input("Aadhaar Number or Mobile Number")
+    st.write("Enter your registered Username / Identity number to set a new password.")
+    user_input = st.text_input("Username / Mobile / Aadhaar Number").strip().lower()
     
     if st.button("Send OTP"):
-        if len(user_input) >= 10:
+        if len(user_input) >= 3:
             st.success("OTP sent to your registered mobile number ending with ******42!")
-            st.text_input("Enter New Password", type="password")
+            new_pass = st.text_input("Enter New Password", type="password")
             if st.button("Update Password"):
-                st.success("Password updated successfully! Please login.")
-                st.rerun()
+                if user_input in st.session_state["user_db"]:
+                    st.session_state["user_db"][user_input] = new_pass
+                    st.success("Password updated successfully! Please login with your new password.")
+                else:
+                    st.error("Username not found in registered database.")
         else:
-            st.error("Please enter a valid 10-digit mobile or 12-digit Aadhaar number.")
+            st.error("Please enter a valid Username or Identity Number.")
 
-def login_page():
-    st.title("🔒 Tamilan Scheme Portal - Login")
+# --- DYNAMIC LOGIN & REGISTRATION PAGE ---
+def auth_page():
+    st.title("🔒 Tamilan Scheme Portal")
     
-    username = st.text_input("Username / Aadhaar ID")
-    password = st.text_input("Password", type="password")
+    tab1, tab2 = st.tabs(["🔑 Login", "📝 Sign Up (Create Account)"])
     
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        if st.button("Login", use_container_width=True):
-            if username == "admin" and password == "sih2026":
-                st.session_state["authenticated"] = True
-                st.rerun()
-            else:
-                st.error("Invalid Username or Password")
+    # --- LOGIN TAB ---
+    with tab1:
+        st.subheader("Login to Your Account")
+        username = st.text_input("Username / Name / Aadhaar ID", key="login_user").strip().lower()
+        password = st.text_input("Password", type="password", key="login_pass").strip()
+        
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("Login", use_container_width=True):
+                if username in st.session_state["user_db"] and st.session_state["user_db"][username] == password:
+                    st.session_state["authenticated"] = True
+                    st.session_state["current_username"] = username
+                    st.success("Login Successful!")
+                    st.rerun()
+                else:
+                    st.error("Invalid Username or Password. Click 'Sign Up' if you need to create an account.")
+        with col2:
+            if st.button("Forgot Password?", use_container_width=True):
+                reset_password_dialog()
                 
-    with col2:
-        if st.button("Forgot Password?", use_container_width=True):
-            reset_password_dialog()
+    # --- SIGN UP TAB ---
+    with tab2:
+        st.subheader("Create New Account")
+        new_username = st.text_input("Choose Your Name / Username", key="reg_user").strip().lower()
+        new_password = st.text_input("Choose Your Password", type="password", key="reg_pass").strip()
+        confirm_password = st.text_input("Confirm Your Password", type="password", key="reg_confirm").strip()
+        
+        if st.button("Register Account", use_container_width=True):
+            if not new_username or not new_password:
+                st.error("Please fill in both Name/Username and Password fields.")
+            elif new_password != confirm_password:
+                st.error("Passwords do not match!")
+            elif new_username in st.session_state["user_db"]:
+                st.warning("This Username is already registered. Please login instead.")
+            else:
+                # Save the new user credentials into session storage
+                st.session_state["user_db"][new_username] = new_password
+                st.success(f"Account created successfully for '{new_username}'! You can now switch to the Login tab.")
 
 # 4. APP GATEKEEPER
 if not st.session_state["authenticated"]:
-    login_page()
+    auth_page()
 else:
     # Sidebar Logout Button
     st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"authenticated": False}))

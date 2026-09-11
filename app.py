@@ -1,4 +1,14 @@
 import streamlit as st
+st.markdown(
+    """
+    <style>
+    header {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 import pandas as pd
 import hashlib
 import base64

@@ -9,6 +9,70 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+import streamlit as st
+import pandas as pd
+import hashlib
+import base64
+import re
+import os
+
+# 1. ALWAYS FIRST STREAMLIT COMMAND
+st.set_page_config(page_title="Tamilan Scheme Portal", layout="wide")
+
+# 2. HIDE TOOLBAR & GITHUB LOGO
+st.markdown("""
+    <style>
+    header {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+
+# 3. LOGIN & FORGOT PASSWORD LOGIC
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+@st.dialog("🔑 Reset Your Password")
+def reset_password_dialog():
+    st.write("Enter your registered Aadhaar / Mobile number to receive an OTP.")
+    user_input = st.text_input("Aadhaar Number or Mobile Number")
+    if st.button("Send OTP"):
+        if len(user_input) >= 10:
+            st.success("OTP sent to your registered mobile number ending with ******42!")
+            st.text_input("Enter New Password", type="password")
+            if st.button("Update Password"):
+                st.success("Password updated successfully! Please login.")
+                st.session_state["forgot_password"] = False
+                st.rerun()
+        else:
+            st.error("Please enter a valid mobile or Aadhaar number.")
+
+def login_page():
+    st.title("🔒 Tamilan Scheme Portal - Login")
+    username = st.text_input("Username / Aadhaar ID")
+    password = st.text_input("Password", type="password")
+    
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Login", use_container_width=True):
+            if username == "admin" and password == "sih2026":
+                st.session_state["authenticated"] = True
+                st.rerun()
+            else:
+                st.error("Invalid Username or Password")
+    with col2:
+        if st.button("Forgot Password?", use_container_width=True):
+            reset_password_dialog()
+
+# 4. CONTROLLER
+if not st.session_state["authenticated"]:
+    login_page()
+else:
+    st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"authenticated": False}))
+    
+    # ----------------------------------------------------
+    # YOUR EXISTING APP CODE STARTS HERE
+    # ----------------------------------------------------
 import pandas as pd
 import hashlib
 import base64

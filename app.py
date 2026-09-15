@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 1. ALWAYS FIRST STREAMLIT COMMAND
+# 1. ALWAYS FIRST STREAMLIT COMMAND (Force sidebar to stay open)
 st.set_page_config(
     page_title="Tamilan Scheme Engine",
     page_icon="🌾",
@@ -8,37 +8,35 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. HIDE GITHUB LOGO & TOOLBAR (KEEP SIDEBAR ARROW VISIBLE)
+# 2. HIDE TOOLBAR & KEEP SIDEBAR BUTTON VISIBLE
 st.markdown(
     """
     <style>
-    #MainMenu, footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"], [data-testid="stToolbar"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"] {display: none !important;}
     
-    header[data-testid="stHeader"] {
-        background: transparent !important;
-        z-index: 99999 !important;
-    }
-    
-    [data-testid="stSidebarCollapseButton"] {
+    /* Force sidebar toggle button to remain visible */
+    [data-testid="stSidebarCollapseButton"], [data-testid="stHeader"] {
         display: block !important;
         visibility: visible !important;
-        z-index: 100000 !important;
+        background: transparent !important;
     }
     
+    /* Main Background & Base Typography */
     .stApp {
         background-color: #121418;
         color: #d1d5db;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
     
+    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
         background-color: #1a1d24 !important;
         border-right: 1px solid #2a2e39 !important;
     }
     
+    /* Elegant Subtle Headers */
     h1 {
         color: #e5c158 !important;
         font-weight: 700 !important;
@@ -50,6 +48,7 @@ st.markdown(
         font-weight: 600 !important;
     }
 
+    /* Subtle Accent Buttons */
     div.stButton > button {
         background-color: #242832 !important;
         color: #e5c158 !important;
@@ -66,6 +65,7 @@ st.markdown(
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
+    /* Soft Cards & Expanders */
     .streamlit-expanderHeader {
         background-color: #1a1d24 !important;
         border-radius: 8px !important;
@@ -74,6 +74,7 @@ st.markdown(
         font-weight: 500 !important;
     }
     
+    /* Form Inputs */
     .stTextInput > div > div > input {
         background-color: #1a1d24 !important;
         color: #f3f4f6 !important;
@@ -85,6 +86,7 @@ st.markdown(
         box-shadow: 0 0 0 1px #d8b244 !important;
     }
 
+    /* Muted Status & Alert Cards */
     .stSuccess {
         background-color: rgba(46, 125, 50, 0.12) !important;
         border: 1px solid rgba(46, 125, 50, 0.3) !important;
@@ -106,12 +108,14 @@ import base64
 import re
 import os
 
+# 3. AUTHENTICATION SESSION STATE & USER DATABASE
 if "user_db" not in st.session_state:
     st.session_state["user_db"] = {"admin": "sih2026"}
 
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
+# --- FORGOT PASSWORD MODAL ---
 @st.dialog("🔑 Reset Your Password")
 def reset_password_dialog():
     st.write("Enter your registered Username / Identity number to set a new password.")
@@ -130,11 +134,13 @@ def reset_password_dialog():
         else:
             st.error("Please enter a valid Username or Identity Number.")
 
+# --- DYNAMIC LOGIN & REGISTRATION PAGE ---
 def auth_page():
     st.title("🔒 Tamilan Scheme Portal")
     
     tab1, tab2 = st.tabs(["🔑 Login", "📝 Sign Up (Create Account)"])
     
+    # --- LOGIN TAB ---
     with tab1:
         st.subheader("Login to Your Account")
         username = st.text_input("Username / Name / Aadhaar ID", key="login_user").strip().lower()
@@ -154,6 +160,7 @@ def auth_page():
             if st.button("Forgot Password?", use_container_width=True):
                 reset_password_dialog()
                 
+    # --- SIGN UP TAB ---
     with tab2:
         st.subheader("Create New Account")
         new_username = st.text_input("Choose Your Name / Username", key="reg_user").strip().lower()
@@ -171,11 +178,14 @@ def auth_page():
                 st.session_state["user_db"][new_username] = new_password
                 st.success(f"Account created successfully for '{new_username}'! You can now switch to the Login tab.")
 
+# 4. APP GATEKEEPER
 if not st.session_state["authenticated"]:
     auth_page()
 else:
+    # Sidebar Logout Button
     st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"authenticated": False}))
 
+    # ---------------- SECURITY & ENCRYPTION HELPERS ----------------
     def generate_encryption_key(passphrase: str) -> bytes:
         return hashlib.sha256(passphrase.encode()).digest()
 
@@ -204,6 +214,7 @@ else:
             lakhs_val = int(funding_match.group(1))
             st.session_state.voice_funding = str(lakhs_val * 100000)
 
+    # ---------------- INITIALIZE SESSION STATE ----------------
     if 'user_data' not in st.session_state:
         st.session_state.user_data = None
     if 'current_step' not in st.session_state:
@@ -223,6 +234,7 @@ else:
     if 'voice_funding' not in st.session_state: st.session_state.voice_funding = ""
     if 'last_transcription' not in st.session_state: st.session_state.last_transcription = ""
 
+    # Mock Scheme Database
     SCHEME_DB = [
         {
             "id": "SCH001",
@@ -262,6 +274,7 @@ else:
         }
     ]
 
+    # ---------------- MULTILINGUAL TRANSLATION DICTIONARY ----------------
     TEXT_DICT = {
         "English": {
             "sidebar_title": "⚙️ Select Language",
@@ -497,6 +510,7 @@ else:
         }
     }
 
+    # ---------------- SIDEBAR BRANDING & NAVIGATION ----------------
     logo_filename = "logo.png"
     if os.path.exists(logo_filename):
         st.sidebar.image(logo_filename, width=180)
@@ -529,9 +543,11 @@ else:
 
     st.markdown("---")
 
+    # ==================== PAGE 1: REGISTRATION ====================
     if st.session_state.current_step == 1:
         st.title(T["p1_title"])
         
+        # Voice Assistant Input Tool
         with st.expander(f"{T['voice_title']}", expanded=True):
             st.write(T["voice_instruction"])
             audio_msg = st.audio_input("Record Voice Input")
@@ -604,6 +620,7 @@ else:
                 go_next()
                 st.rerun()
 
+    # ==================== PAGE 2: SCHEME MATCHING ====================
     elif st.session_state.current_step == 2:
         st.title(T["p2_title"])
         
@@ -628,6 +645,7 @@ else:
                     st.write(f"**{T['p2_ben']}:** {s['benefits']}")
                     st.write(f"**{T['p2_docs']}:** {', '.join(s['documents'])}")
 
+    # ==================== PAGE 3: COMPARISON ====================
     elif st.session_state.current_step == 3:
         st.title(T["p3_title"])
         
@@ -645,6 +663,7 @@ else:
         df = pd.DataFrame(comp_data).set_index("Attribute")
         st.table(df)
 
+    # ==================== PAGE 4: SECURE DOCUMENT VAULT ====================
     elif st.session_state.current_step == 4:
         st.title(T["p4_title"])
         st.markdown(f"> {T['p4_proto']}")
@@ -694,10 +713,12 @@ else:
                         st.write(f"🔒 **{k}**")
                         st.caption(f"File: {v['file_name']} | Size: {v['size']} chars")
 
+    # ==================== PAGE 5: ADMIN & NOTIFICATIONS ====================
     elif st.session_state.current_step == 5:
         st.title(T["p5_title"])
         st.info(T["p5_alert"])
 
+    # ==================== BOTTOM NAVIGATION ====================
     st.markdown("---")
     b1, b2, b3 = st.columns([1, 4, 1])
     with b1:

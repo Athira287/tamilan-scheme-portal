@@ -9,25 +9,38 @@ st.set_page_config(
 )
 
 # 2. COMPLETE HEADER & GITHUB LOGO HIDING CSS
+# 2. HIDE TOOLBAR & GITHUB LOGO (KEEP SIDEBAR ARROW VISIBLE)
 st.markdown(
     """
     <style>
-    /* Hide top header bar, GitHub icons, and Streamlit menus completely */
-    header[data-testid="stHeader"] {
-        background: transparent !important;
-    }
-    
-    /* Hide GitHub / Fork / Main menu buttons on top right */
+    /* Hide top right toolbar, GitHub icon, main menu & footer */
     #MainMenu, footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"], [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
     }
     
-    /* Keep ONLY the sidebar expand/collapse button visible */
+    /* Ensure Sidebar collapse/expand button and header container are ALWAYS VISIBLE */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        z-index: 99999 !important;
+    }
+    
     [data-testid="stSidebarCollapseButton"] {
         display: block !important;
         visibility: visible !important;
-        z-index: 999999 !important;
+        z-index: 100000 !important;
+    }
+    
+    /* Main Background & Base Typography */
+    .stApp {
+        background-color: #121418;
+        color: #d1d5db;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
     }
     
     /* Main Background & Base Typography */

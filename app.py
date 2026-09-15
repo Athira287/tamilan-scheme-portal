@@ -1,20 +1,27 @@
 import streamlit as st
 
-# 1. ALWAYS FIRST STREAMLIT COMMAND
+# 1. ALWAYS FIRST STREAMLIT COMMAND (Force sidebar to stay open)
 st.set_page_config(
     page_title="Tamilan Scheme Engine",
     page_icon="🌾",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# 2. HIDE TOOLBAR, GITHUB LOGO, FOOTER & BOTTOM-RIGHT BADGE
+# 2. HIDE TOOLBAR & KEEP SIDEBAR BUTTON VISIBLE
 st.markdown(
     """
     <style>
-    header {visibility: hidden;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"] {display: none !important;}
+    
+    /* Force sidebar toggle button to remain visible */
+    [data-testid="stSidebarCollapseButton"], [data-testid="stHeader"] {
+        display: block !important;
+        visibility: visible !important;
+        background: transparent !important;
+    }
     
     /* Main Background & Base Typography */
     .stApp {
@@ -94,6 +101,7 @@ st.markdown(
     }
     </style>
 """, unsafe_allow_html=True)
+
 import pandas as pd
 import hashlib
 import base64
@@ -102,7 +110,6 @@ import os
 
 # 3. AUTHENTICATION SESSION STATE & USER DATABASE
 if "user_db" not in st.session_state:
-    # Default admin account
     st.session_state["user_db"] = {"admin": "sih2026"}
 
 if "authenticated" not in st.session_state:
@@ -168,7 +175,6 @@ def auth_page():
             elif new_username in st.session_state["user_db"]:
                 st.warning("This Username is already registered. Please login instead.")
             else:
-                # Save the new user credentials into session storage
                 st.session_state["user_db"][new_username] = new_password
                 st.success(f"Account created successfully for '{new_username}'! You can now switch to the Login tab.")
 
@@ -181,35 +187,28 @@ else:
 
     # ---------------- SECURITY & ENCRYPTION HELPERS ----------------
     def generate_encryption_key(passphrase: str) -> bytes:
-        """Generates a secure key using standard hashlib sha256."""
         return hashlib.sha256(passphrase.encode()).digest()
 
     def encrypt_document(file_bytes: bytes, key: bytes) -> str:
-        """Encrypts raw file bytes using standard XOR + Base64 encoding."""
         key_len = len(key)
         encrypted_bytes = bytes([b ^ key[i % key_len] for i, b in enumerate(file_bytes)])
         return base64.b64encode(encrypted_bytes).decode('utf-8')
 
     def verify_identity_format(id_number: str) -> bool:
-        """Validates standard 12-digit format for identity card numbers."""
         cleaned = id_number.replace(" ", "").replace("-", "")
         return bool(re.fullmatch(r"\d{12}", cleaned))
 
     def parse_voice_text(text: str):
-        """Parses spoken text into form parameters using regular expressions."""
         text_lower = text.lower()
         
-        # Extract Name
         name_match = re.search(r"name is ([a-zA-Z]+)", text_lower)
         if name_match:
             st.session_state.voice_name = name_match.group(1).capitalize()
             
-        # Extract Age
         age_match = re.search(r"age is (\d+)", text_lower) or re.search(r"(\d+) years old", text_lower)
         if age_match:
             st.session_state.voice_age = age_match.group(1)
             
-        # Extract Funding
         funding_match = re.search(r"(\d+)\s*(lakh|lakhs|lac|lacs)", text_lower)
         if funding_match:
             lakhs_val = int(funding_match.group(1))
@@ -229,7 +228,6 @@ else:
     if 'verified_identity' not in st.session_state:
         st.session_state.verified_identity = False
 
-    # Voice assistant form defaults
     if 'voice_name' not in st.session_state: st.session_state.voice_name = ""
     if 'voice_age' not in st.session_state: st.session_state.voice_age = ""
     if 'voice_income' not in st.session_state: st.session_state.voice_income = ""
@@ -673,7 +671,6 @@ else:
         if st.session_state.user_key is None:
             st.error(T["p4_err"])
         else:
-            # Identity Card Verification Section
             st.subheader(T["p4_id_ver"])
             id_num_input = st.text_input(T["p4_id_input"], value="", placeholder=T["p4_id_ph"], type="password")
             if st.button(T["p4_id_btn"]):

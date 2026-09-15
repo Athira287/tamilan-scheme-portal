@@ -1,6 +1,11 @@
 import streamlit as st
+import pandas as pd
+import hashlib
+import base64
+import re
+import os
 
-# 1. ALWAYS FIRST STREAMLIT COMMAND (Force sidebar to stay open)
+# 1. ALWAYS FIRST STREAMLIT COMMAND
 st.set_page_config(
     page_title="Tamilan Scheme Engine",
     page_icon="🌾",
@@ -8,21 +13,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. HIDE GITHUB LOGO & TOOLBAR (KEEP SIDEBAR ARROW VISIBLE)
-# 2. HIDE GITHUB TOOLBAR & PERMANENTLY PIN SIDEBAR OPEN
-# 2. HIDE GITHUB TOOLBAR (ALLOW SIDEBAR TO OPEN & CLOSE FREELY)
+# 2. HIDE GITHUB TOOLBAR (KEEP SIDEBAR TOGGLE BUTTON ALWAYS VISIBLE)
 st.markdown(
     """
     <style>
-    /* Hide top right toolbar, GitHub icons & footer */
+    /* Hide top right toolbar, GitHub icons, fork button & footer */
     #MainMenu, footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"], [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
     }
     
-    /* Transparent Header so arrow button is never blocked */
+    /* Transparent Header so arrow button is never hidden */
     header[data-testid="stHeader"] {
         background: transparent !important;
+        height: 3rem !important;
         z-index: 99999 !important;
     }
 
@@ -34,26 +38,88 @@ st.markdown(
         z-index: 100000 !important;
     }
     
+    /* Main Background & Base Typography */
     .stApp {
         background-color: #121418;
         color: #d1d5db;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
+    
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #1a1d24 !important;
+        border-right: 1px solid #2a2e39 !important;
+    }
+    
+    /* Headers */
+    h1 {
+        color: #e5c158 !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.5px;
+    }
+    
+    h2, h3 {
+        color: #d8b244 !important;
+        font-weight: 600 !important;
+    }
+
+    /* Accent Buttons */
+    div.stButton > button {
+        background-color: #242832 !important;
+        color: #e5c158 !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        border: 1px solid #3b4252 !important;
+        padding: 0.5rem 1rem !important;
+        transition: all 0.2s ease-in-out;
+    }
+    div.stButton > button:hover {
+        background-color: #2e3440 !important;
+        border-color: #e5c158 !important;
+        color: #f3d677 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Form Inputs */
+    .stTextInput > div > div > input {
+        background-color: #1a1d24 !important;
+        color: #f3f4f6 !important;
+        border: 1px solid #2a2e39 !important;
+        border-radius: 6px !important;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #d8b244 !important;
+        box-shadow: 0 0 0 1px #d8b244 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
-import pandas as pd
-import hashlib
-import base64
-import re
-import os
 
-# Initialize session state for language
+# 3. INITIALIZE LANGUAGE & AUTH SESSION
 if 'lang' not in st.session_state:
     st.session_state.lang = "English"
 
-# --- MULTILINGUAL DICTIONARY FOR GLOBAL SIDEBAR & PORTAL ---
+if "user_db" not in st.session_state:
+    st.session_state["user_db"] = {"admin": "sih2026"}
+
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+# --- MULTILINGUAL DICTIONARY FOR ENTIRE PORTAL ---
 TEXT_DICT = {
     "English": {
+        "auth_title": "🔒 Tamilan Scheme Portal",
+        "login_tab": "🔑 Login",
+        "signup_tab": "📝 Sign Up (Create Account)",
+        "login_sub": "Login to Your Account",
+        "user_label": "Username / Name / Aadhaar ID",
+        "pass_label": "Password",
+        "login_btn": "Login",
+        "forgot_btn": "Forgot Password?",
+        "signup_sub": "Create New Account",
+        "reg_user_label": "Choose Your Name / Username",
+        "reg_pass_label": "Choose Your Password",
+        "reg_conf_label": "Confirm Your Password",
+        "reg_btn": "Register Account",
         "sidebar_title": "⚙️ Select Language",
         "pages": [
             "1. Registration & Security Setup",
@@ -112,6 +178,19 @@ TEXT_DICT = {
         "btn_next": "Next ➡️"
     },
     "Tamil (தமிழ்)": {
+        "auth_title": "🔒 தமிழன் திட்டம் போர்டல்",
+        "login_tab": "🔑 உள்நுழைவு (Login)",
+        "signup_tab": "📝 கணக்கு உருவாக்க (Sign Up)",
+        "login_sub": "உங்கள் கணக்கில் உள்நுழையவும்",
+        "user_label": "பயனர்பெயர் / ஆதார் எண்",
+        "pass_label": "கடவுச்சொல் (Password)",
+        "login_btn": "உள்நுழைக",
+        "forgot_btn": "கடவுச்சொல்லை மறந்துவிட்டீர்களா?",
+        "signup_sub": "புதிய கணக்கை உருவாக்கவும்",
+        "reg_user_label": "உங்கள் பெயரைத் தேர்ந்தெடுக்கவும்",
+        "reg_pass_label": "கடவுச்சொல்லை உருவாக்கவும்",
+        "reg_conf_label": "கடவுச்சொல்லை உறுதிப்படுத்தவும்",
+        "reg_btn": "கணக்கை பதிவு செய்யவும்",
         "sidebar_title": "⚙️ மொழியைத் தேர்ந்தெடுக்கவும்",
         "pages": [
             "1. சுயவிவரம் & பாதுகாப்பு அமைப்புகள்",
@@ -170,6 +249,19 @@ TEXT_DICT = {
         "btn_next": "அடுத்த ➡️"
     },
     "Hindi (हिंदी)": {
+        "auth_title": "🔒 तमिलन स्कीम पोर्टल",
+        "login_tab": "🔑 लॉगिन",
+        "signup_tab": "📝 खाता बनाएं",
+        "login_sub": "अपने खाते में लॉगिन करें",
+        "user_label": "उपयोगकर्ता नाम / आधार आईडी",
+        "pass_label": "पासवर्ड",
+        "login_btn": "लॉगिन करें",
+        "forgot_btn": "पासवर्ड भूल गए?",
+        "signup_sub": "नया खाता बनाएं",
+        "reg_user_label": "अपना नाम चुनें",
+        "reg_pass_label": "पासवर्ड चुनें",
+        "reg_conf_label": "पासवर्ड की पुष्टि करें",
+        "reg_btn": "खाता पंजीकृत करें",
         "sidebar_title": "⚙️ भाषा चुनें",
         "pages": [
             "1. पंजीकरण और सुरक्षा सेटअप",
@@ -228,6 +320,19 @@ TEXT_DICT = {
         "btn_next": "अगला ➡️"
     },
     "Malayalam (മലയാളം)": {
+        "auth_title": "🔒 തമിഴൻ സ്കീം പോർട്ടൽ",
+        "login_tab": "🔑 ലോഗിൻ",
+        "signup_tab": "📝 അക്കൗണ്ട് സൃഷ്ടിക്കുക",
+        "login_sub": "നിങ്ങളുടെ അക്കൗണ്ടിലേക്ക് ലോഗിൻ ചെയ്യുക",
+        "user_label": "ഉപയോക്തൃനാമം / ആധാർ ഐഡി",
+        "pass_label": "പാസ്‌വേഡ്",
+        "login_btn": "ലോഗിൻ ചെയ്യുക",
+        "forgot_btn": "പാസ്‌വേഡ് മറന്നോ?",
+        "signup_sub": "പുതിയ അക്കൗണ്ട് സൃഷ്ടിക്കുക",
+        "reg_user_label": "പേര് തിരഞ്ഞെടുക്കുക",
+        "reg_pass_label": "പാസ്‌വേഡ് നൽകുക",
+        "reg_conf_label": "പാസ്‌വേഡ് സ്ഥിരീകരിക്കുക",
+        "reg_btn": "രജിസ്റ്റർ ചെയ്യുക",
         "sidebar_title": "⚙️ ഭാഷ തിരഞ്ഞെടുക്കുക",
         "pages": [
             "1. രജിസ്ട്രേഷൻ & സുരക്ഷാ സജ്ജീകരണം",
@@ -287,7 +392,7 @@ TEXT_DICT = {
     }
 }
 
-# --- GLOBAL SIDEBAR SETUP (Always Visible on Login & App) ---
+# --- GLOBAL SIDEBAR SETUP ---
 logo_filename = "logo.png"
 if os.path.exists(logo_filename):
     st.sidebar.image(logo_filename, width=180)
@@ -296,22 +401,21 @@ st.sidebar.markdown("# 🌾 **Tamilan Scheme**")
 st.sidebar.caption("Government Scheme Portal & Matching Engine")
 st.sidebar.markdown("---")
 
+# Language Selection Box
+lang_list = ["English", "Tamil (தமிழ்)", "Hindi (हिंदी)", "Malayalam (മലയാളം)"]
 selected_lang = st.sidebar.radio(
     "Select Interface Language:", 
-    ["English", "Tamil (தமிழ்)", "Hindi (हिंदी)", "Malayalam (മലയാളം)"],
-    index=["English", "Tamil (தமிழ்)", "Hindi (हिंदी)", "Malayalam (മലയാളം)"].index(st.session_state.lang)
+    lang_list,
+    index=lang_list.index(st.session_state.lang)
 )
 
-st.session_state.lang = selected_lang
+if selected_lang != st.session_state.lang:
+    st.session_state.lang = selected_lang
+    st.rerun()
+
 T = TEXT_DICT[st.session_state.lang]
 
-# --- AUTHENTICATION SESSION STATE ---
-if "user_db" not in st.session_state:
-    st.session_state["user_db"] = {"admin": "sih2026"}
-
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
-
+# --- FORGOT PASSWORD MODAL ---
 @st.dialog("🔑 Reset Your Password")
 def reset_password_dialog():
     st.write("Enter your registered Username / Identity number to set a new password.")
@@ -330,46 +434,46 @@ def reset_password_dialog():
         else:
             st.error("Please enter a valid Username or Identity Number.")
 
+# --- DYNAMIC MULTILINGUAL AUTHENTICATION PAGE ---
 def auth_page():
-    st.title("🔒 Tamilan Scheme Portal")
+    st.title(T["auth_title"])
     
-    tab1, tab2 = st.tabs(["🔑 Login", "📝 Sign Up (Create Account)"])
+    tab1, tab2 = st.tabs([T["login_tab"], T["signup_tab"]])
     
     with tab1:
-        st.subheader("Login to Your Account")
-        username = st.text_input("Username / Name / Aadhaar ID", key="login_user").strip().lower()
-        password = st.text_input("Password", type="password", key="login_pass").strip()
+        st.subheader(T["login_sub"])
+        username = st.text_input(T["user_label"], key="login_user").strip().lower()
+        password = st.text_input(T["pass_label"], type="password", key="login_pass").strip()
         
         col1, col2 = st.columns([1, 1])
         with col1:
-            if st.button("Login", use_container_width=True):
+            if st.button(T["login_btn"], use_container_width=True):
                 if username in st.session_state["user_db"] and st.session_state["user_db"][username] == password:
                     st.session_state["authenticated"] = True
                     st.session_state["current_username"] = username
-                    st.success("Login Successful!")
                     st.rerun()
                 else:
-                    st.error("Invalid Username or Password. Click 'Sign Up' if you need to create an account.")
+                    st.error("Invalid Username or Password.")
         with col2:
-            if st.button("Forgot Password?", use_container_width=True):
+            if st.button(T["forgot_btn"], use_container_width=True):
                 reset_password_dialog()
                 
     with tab2:
-        st.subheader("Create New Account")
-        new_username = st.text_input("Choose Your Name / Username", key="reg_user").strip().lower()
-        new_password = st.text_input("Choose Your Password", type="password", key="reg_pass").strip()
-        confirm_password = st.text_input("Confirm Your Password", type="password", key="reg_confirm").strip()
+        st.subheader(T["signup_sub"])
+        new_username = st.text_input(T["reg_user_label"], key="reg_user").strip().lower()
+        new_password = st.text_input(T["reg_pass_label"], type="password", key="reg_pass").strip()
+        confirm_password = st.text_input(T["reg_conf_label"], type="password", key="reg_confirm").strip()
         
-        if st.button("Register Account", use_container_width=True):
+        if st.button(T["reg_btn"], use_container_width=True):
             if not new_username or not new_password:
-                st.error("Please fill in both Name/Username and Password fields.")
+                st.error("Please fill in both fields.")
             elif new_password != confirm_password:
                 st.error("Passwords do not match!")
             elif new_username in st.session_state["user_db"]:
-                st.warning("This Username is already registered. Please login instead.")
+                st.warning("Username is already registered.")
             else:
                 st.session_state["user_db"][new_username] = new_password
-                st.success(f"Account created successfully for '{new_username}'! You can now switch to the Login tab.")
+                st.success(f"Account created successfully for '{new_username}'!")
 
 if not st.session_state["authenticated"]:
     auth_page()

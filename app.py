@@ -9,34 +9,45 @@ st.set_page_config(
 )
 
 # 2. HIDE GITHUB LOGO & TOOLBAR (KEEP SIDEBAR ARROW VISIBLE)
+# 2. HIDE GITHUB TOOLBAR & PERMANENTLY PIN SIDEBAR OPEN
 st.markdown(
     """
     <style>
+    /* Hide top right toolbar, GitHub icons, fork button & footer */
     #MainMenu, footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"], [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
     }
     
+    /* Ensure Header doesn't block the UI */
     header[data-testid="stHeader"] {
         background: transparent !important;
-        z-index: 99999 !important;
+        height: 2.5rem !important;
     }
     
-    [data-testid="stSidebarCollapseButton"] {
+    /* Force Left Sidebar to ALWAYS stay OPEN and visible (No disappearing!) */
+    section[data-testid="stSidebar"] {
+        background-color: #1a1d24 !important;
+        border-right: 1px solid #2a2e39 !important;
         display: block !important;
         visibility: visible !important;
-        z-index: 100000 !important;
+        transform: none !important;
+        min-width: 320px !important;
+        max-width: 320px !important;
+    }
+
+    /* Force the collapse/expand toggle arrow to stay visible */
+    [data-testid="stSidebarCollapseButton"], button[kind="header"] {
+        display: block !important;
+        visibility: visible !important;
+        color: #e5c158 !important;
+        z-index: 999999 !important;
     }
     
     .stApp {
         background-color: #121418;
         color: #d1d5db;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    }
-    
-    section[data-testid="stSidebar"] {
-        background-color: #1a1d24 !important;
-        border-right: 1px solid #2a2e39 !important;
     }
     
     h1 {
@@ -99,7 +110,6 @@ st.markdown(
     }
     </style>
 """, unsafe_allow_html=True)
-
 import pandas as pd
 import hashlib
 import base64

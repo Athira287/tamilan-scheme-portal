@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 1. ALWAYS FIRST STREAMLIT COMMAND (Force sidebar to stay open)
+# 1. ALWAYS FIRST STREAMLIT COMMAND
 st.set_page_config(
     page_title="Tamilan Scheme Engine",
     page_icon="🌾",
@@ -8,19 +8,26 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. HIDE TOOLBAR & KEEP SIDEBAR BUTTON VISIBLE
+# 2. COMPLETE HEADER & GITHUB LOGO HIDING CSS
 st.markdown(
     """
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"] {display: none !important;}
+    /* Hide top header bar, GitHub icons, and Streamlit menus completely */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+    }
     
-    /* Force sidebar toggle button to remain visible */
-    [data-testid="stSidebarCollapseButton"], [data-testid="stHeader"] {
+    /* Hide GitHub / Fork / Main menu buttons on top right */
+    #MainMenu, footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"], [data-testid="stToolbar"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Keep ONLY the sidebar expand/collapse button visible */
+    [data-testid="stSidebarCollapseButton"] {
         display: block !important;
         visibility: visible !important;
-        background: transparent !important;
+        z-index: 999999 !important;
     }
     
     /* Main Background & Base Typography */
@@ -48,7 +55,7 @@ st.markdown(
         font-weight: 600 !important;
     }
 
-    /* Subtle Accent Buttons */
+    /* Accent Buttons */
     div.stButton > button {
         background-color: #242832 !important;
         color: #e5c158 !important;

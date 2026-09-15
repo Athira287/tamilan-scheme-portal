@@ -10,103 +10,34 @@ st.set_page_config(
 
 # 2. HIDE GITHUB LOGO & TOOLBAR (KEEP SIDEBAR ARROW VISIBLE)
 # 2. HIDE GITHUB TOOLBAR & PERMANENTLY PIN SIDEBAR OPEN
+# 2. HIDE GITHUB TOOLBAR (ALLOW SIDEBAR TO OPEN & CLOSE FREELY)
 st.markdown(
     """
     <style>
-    /* Hide top right toolbar, GitHub icons, fork button & footer */
+    /* Hide top right toolbar, GitHub icons & footer */
     #MainMenu, footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"], [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
     }
     
-    /* Ensure Header doesn't block the UI */
+    /* Transparent Header so arrow button is never blocked */
     header[data-testid="stHeader"] {
         background: transparent !important;
-        height: 2.5rem !important;
-    }
-    
-    /* Force Left Sidebar to ALWAYS stay OPEN and visible (No disappearing!) */
-    section[data-testid="stSidebar"] {
-        background-color: #1a1d24 !important;
-        border-right: 1px solid #2a2e39 !important;
-        display: block !important;
-        visibility: visible !important;
-        transform: none !important;
-        min-width: 320px !important;
-        max-width: 320px !important;
+        z-index: 99999 !important;
     }
 
-    /* Force the collapse/expand toggle arrow to stay visible */
+    /* Force the Sidebar toggle button (">" and "<") to ALWAYS remain visible */
     [data-testid="stSidebarCollapseButton"], button[kind="header"] {
         display: block !important;
         visibility: visible !important;
         color: #e5c158 !important;
-        z-index: 999999 !important;
+        z-index: 100000 !important;
     }
     
     .stApp {
         background-color: #121418;
         color: #d1d5db;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    }
-    
-    h1 {
-        color: #e5c158 !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.5px;
-    }
-    
-    h2, h3 {
-        color: #d8b244 !important;
-        font-weight: 600 !important;
-    }
-
-    div.stButton > button {
-        background-color: #242832 !important;
-        color: #e5c158 !important;
-        font-weight: 600 !important;
-        border-radius: 8px !important;
-        border: 1px solid #3b4252 !important;
-        padding: 0.5rem 1rem !important;
-        transition: all 0.2s ease-in-out;
-    }
-    div.stButton > button:hover {
-        background-color: #2e3440 !important;
-        border-color: #e5c158 !important;
-        color: #f3d677 !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .streamlit-expanderHeader {
-        background-color: #1a1d24 !important;
-        border-radius: 8px !important;
-        border-left: 3px solid #d8b244 !important;
-        color: #e5e7eb !important;
-        font-weight: 500 !important;
-    }
-    
-    .stTextInput > div > div > input {
-        background-color: #1a1d24 !important;
-        color: #f3f4f6 !important;
-        border: 1px solid #2a2e39 !important;
-        border-radius: 6px !important;
-    }
-    .stTextInput > div > div > input:focus {
-        border-color: #d8b244 !important;
-        box-shadow: 0 0 0 1px #d8b244 !important;
-    }
-
-    .stSuccess {
-        background-color: rgba(46, 125, 50, 0.12) !important;
-        border: 1px solid rgba(46, 125, 50, 0.3) !important;
-        color: #81c784 !important;
-        border-radius: 6px !important;
-    }
-    .stInfo {
-        background-color: rgba(216, 178, 68, 0.1) !important;
-        border: 1px solid rgba(216, 178, 68, 0.3) !important;
-        color: #e5c158 !important;
-        border-radius: 6px !important;
     }
     </style>
 """, unsafe_allow_html=True)

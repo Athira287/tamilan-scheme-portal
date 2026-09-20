@@ -1,9 +1,13 @@
-import streamlit as st
-import pandas as pd
-import hashlib
 import base64
-import re
+import hashlib
+import io
 import os
+import re
+
+import pandas as pd
+from pydub import AudioSegment
+import speech_recognition as sr
+import streamlit as st
 
 # Set page configuration
 st.set_page_config(
@@ -111,24 +115,28 @@ def verify_identity_format(id_number: str) -> bool:
     return bool(re.fullmatch(r"\d{12}", cleaned))
 
 def parse_voice_text(text: str):
-    """Parses spoken text into form parameters using regular expressions."""
+    """Parses spoken text into form parameters dynamically using regular expressions."""
     text_lower = text.lower()
     
-    # Extract Name
-    name_match = re.search(r"name is ([a-zA-Z]+)", text_lower)
+    # 1. Extract Name (Flexible patterns like: "my name is Karthik", "I am John", "this is Adhira")
+    name_match = re.search(r"(?:name is|i am|call me|this is)\s+([a-zA-Z]+)", text_lower)
     if name_match:
         st.session_state.voice_name = name_match.group(1).capitalize()
         
-    # Extract Age
-    age_match = re.search(r"age is (\d+)", text_lower) or re.search(r"(\d+) years old", text_lower)
+    # 2. Extract Age (Flexible patterns like: "age is 28", "28 years old", "i am 30")
+    age_match = re.search(r"(?:age is|years old)\s*(\d+)", text_lower) or re.search(r"i am (\d+)", text_lower)
     if age_match:
         st.session_state.voice_age = age_match.group(1)
         
-    # Extract Funding
+    # 3. Extract Funding Request (e.g., "3 lakh", "5 lakhs", "500000", "loan of 400000")
     funding_match = re.search(r"(\d+)\s*(lakh|lakhs|lac|lacs)", text_lower)
     if funding_match:
         lakhs_val = int(funding_match.group(1))
         st.session_state.voice_funding = str(lakhs_val * 100000)
+    else:
+        direct_amount = re.search(r"(?:loan|funding|amount|need)\s*(?:of)?\s*₹?\s*(\d{5,})", text_lower)
+        if direct_amount:
+            st.session_state.voice_funding = direct_amount.group(1)
 
 # ---------------- INITIALIZE SESSION STATE ----------------
 if 'user_data' not in st.session_state:
@@ -232,7 +240,7 @@ TEXT_DICT = {
         "p3_title": "⚖️ Scheme Comparison Matrix",
         "p3_attr": ["Financial Benefits", "Target Sector", "Max Funding", "Required Documents Count"],
         "p4_title": "📄 Secure Document Vault & Verification",
-        "p4_proto": "🔒 Privacy Protocol: Documents uploaded are encrypted in-memory using SHA256-XOR Key Stream Cipher. Unverified third parties cannot access your documents without authorization.",
+        "p4_proto": "🔒 Privacy Protocol: Documents uploaded are encrypted in-memory using SHA256-XOR Key Stream Cipher.",
         "p4_err": "Please set your Encryption Passphrase on Page 1 first!",
         "p4_id_ver": "🆔 Secure Identity Card Verification",
         "p4_id_input": "Enter 12-Digit Government Identity Card Number for Verification",
@@ -464,7 +472,7 @@ st.markdown("---")
 if st.session_state.current_step == 1:
     st.title(T["p1_title"])
     
-    # Voice Assistant Input Tool with Dynamic NLP Parsing & Auto-Rerun
+    # Voice Assistant Input Tool with Dynamic NLP Parsing & Audio Converter
     with st.expander(f"{T['voice_title']}", expanded=True):
         st.write(T["voice_instruction"])
         audio_msg = st.audio_input("Record Voice Input")
@@ -472,14 +480,29 @@ if st.session_state.current_step == 1:
         if audio_msg:
             transcribed_text = ""
             try:
-                import speech_recognition as sr
+                # Read raw bytes from Streamlit audio recorder
+                audio_bytes = audio_msg.read()
+                
+                # Convert WebM/OGG browser recording to WAV using Pydub
+                audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes))
+                wav_io = io.BytesIO()
+                audio_segment.export(wav_io, format="wav")
+                wav_io.seek(0)
+                
+                # Perform speech recognition on converted WAV
                 r = sr.Recognizer()
-                with sr.AudioFile(audio_msg) as source:
+                with sr.AudioFile(wav_io) as source:
                     audio_data = r.record(source)
                     transcribed_text = r.recognize_google(audio_data)
-            except Exception:
-                transcribed_text = "my name is adhira and my age is 28 I am looking for 3 lakh loan from Tamil Nadu"
+                    
+            except sr.UnknownValueError:
+                st.error("⚠️ Could not recognize speech cleanly. Please speak clearly and try again.")
+            except sr.RequestError as e:
+                st.error(f"⚠️ Speech Recognition service error: {e}")
+            except Exception as e:
+                st.error(f"⚠️ Audio parsing failed: {e}. Please ensure FFmpeg is installed on your system.")
             
+            # Update inputs dynamically if speech is recognized
             if transcribed_text and transcribed_text != st.session_state.last_transcription:
                 st.session_state.last_transcription = transcribed_text
                 parse_voice_text(transcribed_text)

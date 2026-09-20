@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import hashlib
 import base64
@@ -439,11 +440,39 @@ SCHEME_DB = [
     }
 ]
 
-# --- SIDEBAR TOGGLE & LANGUAGE SELECTION ---
-col_side_toggle, col_empty = st.columns([1, 5])
+# --- WORKING JAVASCRIPT NAVIGATION TOGGLE ---
+col_side_toggle, col_empty = st.columns([1, 4])
 with col_side_toggle:
-    if st.button("☰ Open / Close Navigation Menu"):
-        pass
+    components.html(
+        """
+        <button id="toggleBtn" style="
+            background-color: #242832;
+            color: #e5c158;
+            border: 1px solid #3b4252;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+            font-family: system-ui, sans-serif;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease-in-out;
+        ">
+            ☰ Toggle Navigation Menu
+        </button>
+
+        <script>
+        document.getElementById("toggleBtn").addEventListener("click", function() {
+            const parentDoc = window.parent.document;
+            const sidebarBtn = parentDoc.querySelector('[data-testid="stSidebarCollapseButton"] button') || 
+                               parentDoc.querySelector('[data-testid="stSidebarCollapseButton"]');
+            if (sidebarBtn) {
+                sidebarBtn.click();
+            }
+        });
+        </script>
+        """,
+        height=50,
+    )
 
 logo_filename = "logo.png"
 if os.path.exists(logo_filename):
@@ -643,7 +672,6 @@ else:
             category = st.selectbox(T["p1_category"], ["SC", "ST", "Women", "OBC", "General"])
 
             if st.form_submit_button(T["p1_btn"]):
-                # STRICT VALIDATION: Require actual input from user
                 if not name or not age_raw or not income_raw or not funding_raw:
                     st.error(" Please fill in all required fields marked with * (Name, Age, Income, and Funding Amount) before proceeding!")
                 else:

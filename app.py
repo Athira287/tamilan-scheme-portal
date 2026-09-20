@@ -29,7 +29,6 @@ st.markdown(
         height: 2.5rem !important;
     }
     
-    /* Keep Sidebar Toggle Always Accessible */
     [data-testid="stSidebarCollapseButton"] {
         display: block !important;
         visibility: visible !important;
@@ -133,8 +132,8 @@ TEXT_DICT = {
             "5. AI Chatbot & Real-Time Alerts"
         ],
         "p1_title": "🌾 Tamilan Scheme - Profile & Security Setup",
-        "voice_title": "🎙️ AI Voice Guidance Assistant",
-        "voice_instruction": "Click record below to speak your details instead of typing.",
+        "voice_title": "🎙️ Dynamic AI Voice Input Assistant",
+        "voice_instruction": "Click record and clearly speak your details (e.g., 'My name is Rahul, age is 30, income is 4 lakhs').",
         "p1_sec_sub": "Security Details (Documents Safety Key)",
         "p1_sec_pass": "Create Secret Key / Passphrase for Documents Encryption",
         "p1_sec_ph": "enter your secret passphrase eg. Pass@123",
@@ -574,21 +573,29 @@ else:
         cleaned = id_number.replace(" ", "").replace("-", "")
         return bool(re.fullmatch(r"\d{12}", cleaned))
 
+    # REAL DYNAMIC SPEECH RECOGNITION PARSER (No hardcoded fake texts)
     def parse_voice_text(text: str):
         text_lower = text.lower()
         
-        name_match = re.search(r"name is ([a-zA-Z]+)", text_lower)
+        name_match = re.search(r"name is ([a-zA-Z]+)", text_lower) or re.search(r"i am ([a-zA-Z]+)", text_lower)
         if name_match:
             st.session_state.voice_name = name_match.group(1).capitalize()
             
-        age_match = re.search(r"age is (\d+)", text_lower) or re.search(r"(\d+) years old", text_lower)
+        age_match = re.search(r"age is (\d+)", text_lower) or re.search(r"(\d+) years old", text_lower) or re.search(r"age (\d+)", text_lower)
         if age_match:
             st.session_state.voice_age = age_match.group(1)
             
-        funding_match = re.search(r"(\d+)\s*(lakh|lakhs|lac|lacs)", text_lower)
+        income_match = re.search(r"income is (\d+)", text_lower) or re.search(r"income (\d+)", text_lower)
+        if income_match:
+            st.session_state.voice_income = income_match.group(1)
+            
+        funding_match = re.search(r"(\d+)\s*(lakh|lakhs|lac|lacs)", text_lower) or re.search(r"funding (\d+)", text_lower)
         if funding_match:
-            lakhs_val = int(funding_match.group(1))
-            st.session_state.voice_funding = str(lakhs_val * 100000)
+            try:
+                lakhs_val = int(funding_match.group(1))
+                st.session_state.voice_funding = str(lakhs_val * 100000)
+            except ValueError:
+                pass
 
     if 'user_data' not in st.session_state:
         st.session_state.user_data = None
@@ -639,8 +646,9 @@ else:
                     with sr.AudioFile(audio_msg) as source:
                         audio_data = r.record(source)
                         transcribed_text = r.recognize_google(audio_data)
-                except Exception:
-                    transcribed_text = "my name is adhira and my age is 28 I am looking for 3 lakh loan from Tamil Nadu"
+                except Exception as e:
+                    st.error("Could not process voice input clearly. Please try speaking again or fill in the form fields manually.")
+                    transcribed_text = ""
                 
                 if transcribed_text and transcribed_text != st.session_state.last_transcription:
                     st.session_state.last_transcription = transcribed_text
@@ -649,7 +657,7 @@ else:
 
             if st.session_state.last_transcription:
                 st.success(f"🎙️ **Transcribed Input:** \"{st.session_state.last_transcription}\"")
-                st.info("💡 Speech processed! Extracted parameters auto-filled into form fields below.")
+                st.info("💡 Speech processed! Recognized values auto-filled into form fields below.")
 
         with st.form("user_profile_form"):
             st.subheader(T["p1_sec_sub"])

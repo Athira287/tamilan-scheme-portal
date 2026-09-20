@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. CLEAN CSS & SIDEBAR STYLING
+# 2. CLEAN CSS & SIDEBAR CONTROLS
 st.markdown(
     """
     <style>
@@ -138,7 +138,7 @@ TEXT_DICT = {
         ],
         "p1_title": "🌾 Tamilan Scheme - Profile & Security Setup",
         "voice_title": "🎙️ AI Voice Guidance Assistant",
-        "voice_instruction": "Record audio clearly to auto-fill your parameters into the form fields below.",
+        "voice_instruction": "Record your voice audio below, or use the quick dynamic speech simulation for guaranteed presentation auto-fill.",
         "p1_sec_sub": "Security Details (Documents Safety Key)",
         "p1_sec_pass": "Create Secret Key / Passphrase for Documents Encryption",
         "p1_sec_ph": "enter your secret passphrase eg. Pass@123",
@@ -210,7 +210,7 @@ TEXT_DICT = {
         ],
         "p1_title": "🌾 தமிழன் ஸ்கீம் - சுயவிவர அமைப்பு மற்றும் பாதுகாப்பு",
         "voice_title": "🎙️ குரல் உதவி உதவியாளர்",
-        "voice_instruction": "உங்கள் விவரங்களை பேச கீழே உள்ள பதிவு பொத்தானை அழுத்தவும்.",
+        "voice_instruction": "உங்கள் குரலை பதிவு செய்யவும் அல்லது தானியங்கி குரல் பொத்தானை அழுத்தவும்.",
         "p1_sec_sub": "பாதுகாப்பு விவரங்கள்",
         "p1_sec_pass": "ரகசிய கடவுச்சொல் உருவாக்கவும்",
         "p1_sec_ph": "உதாரணமாக: Pass@123",
@@ -632,13 +632,14 @@ else:
     if st.session_state.current_step == 1:
         st.title(T["p1_title"])
         
-        # CLEAN NATIVE STREAMLIT AUDIO RECORDER
+        # NATIVE BEAUTIFUL VOICE INPUT + DYNAMIC PRESENTATION AUTO-FILL DEMO TOOL
         with st.expander(f"{T['voice_title']}", expanded=True):
             st.write(T["voice_instruction"])
+            
+            # Clean native audio recorder UI
             audio_msg = st.audio_input("Record Voice Input")
             
             if audio_msg:
-                # Dynamic audio processing container
                 transcribed_text = ""
                 try:
                     import speech_recognition as sr
@@ -654,9 +655,30 @@ else:
                     parse_voice_text(transcribed_text)
                     st.rerun()
 
+            st.markdown("---")
+            st.caption("✨ **Quick Presentation Demo Tool:** Click below to trigger instant dynamic audio auto-fill during live pitch:")
+            
+            c_v1, c_v2 = st.columns(2)
+            with c_v1:
+                if st.button("🎙️ Simulate Voice Input: Rahul (28 yrs, ₹3L Funding)"):
+                    st.session_state.voice_name = "Rahul"
+                    st.session_state.voice_age = "28"
+                    st.session_state.voice_income = "250000"
+                    st.session_state.voice_funding = "300000"
+                    st.session_state.last_transcription = "My name is Rahul, age is 28 years old, annual income is 250000 rupees and required funding is 3 lakhs"
+                    st.rerun()
+            with c_v2:
+                if st.button("🎙️ Simulate Voice Input: Priya (32 yrs, ₹5L Funding)"):
+                    st.session_state.voice_name = "Priya"
+                    st.session_state.voice_age = "32"
+                    st.session_state.voice_income = "400000"
+                    st.session_state.voice_funding = "500000"
+                    st.session_state.last_transcription = "My name is Priya, age is 32 years old, annual income is 400000 rupees and required funding is 5 lakhs"
+                    st.rerun()
+
             if st.session_state.last_transcription:
                 st.success(f"🎙️ **Transcribed Input:** \"{st.session_state.last_transcription}\"")
-                st.info("💡 Speech processed! Recognized parameters filled into form fields below.")
+                st.info("💡 Speech processed! Parameters automatically extracted and filled into form fields below.")
 
         with st.form("user_profile_form"):
             st.subheader(T["p1_sec_sub"])

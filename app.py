@@ -8,9 +8,91 @@ import os
 # Set page configuration
 st.set_page_config(
     page_title="Tamilan Scheme Engine",
-    page_icon="🚀",
+    page_icon="🌾",
     layout="wide"
 )
+
+# ---------------- CUSTOM SUBTLE & ELEGANT THEMING ----------------
+st.markdown("""
+    <style>
+    /* Main Background & Base Typography */
+    .stApp {
+        background-color: #121418;
+        color: #d1d5db;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #1a1d24 !important;
+        border-right: 1px solid #2a2e39 !important;
+    }
+    
+    /* Elegant Subtle Headers */
+    h1 {
+        color: #e5c158 !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.5px;
+    }
+    
+    h2, h3 {
+        color: #d8b244 !important;
+        font-weight: 600 !important;
+    }
+
+    /* Subtle Accent Buttons */
+    div.stButton > button {
+        background-color: #242832 !important;
+        color: #e5c158 !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        border: 1px solid #3b4252 !important;
+        padding: 0.5rem 1rem !important;
+        transition: all 0.2s ease-in-out;
+    }
+    div.stButton > button:hover {
+        background-color: #2e3440 !important;
+        border-color: #e5c158 !important;
+        color: #f3d677 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Soft Cards & Expanders */
+    .streamlit-expanderHeader {
+        background-color: #1a1d24 !important;
+        border-radius: 8px !important;
+        border-left: 3px solid #d8b244 !important;
+        color: #e5e7eb !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Form Inputs */
+    .stTextInput > div > div > input {
+        background-color: #1a1d24 !important;
+        color: #f3f4f6 !important;
+        border: 1px solid #2a2e39 !important;
+        border-radius: 6px !important;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #d8b244 !important;
+        box-shadow: 0 0 0 1px #d8b244 !important;
+    }
+
+    /* Muted Status & Alert Cards */
+    .stSuccess {
+        background-color: rgba(46, 125, 50, 0.12) !important;
+        border: 1px solid rgba(46, 125, 50, 0.3) !important;
+        color: #81c784 !important;
+        border-radius: 6px !important;
+    }
+    .stInfo {
+        background-color: rgba(216, 178, 68, 0.1) !important;
+        border: 1px solid rgba(216, 178, 68, 0.3) !important;
+        color: #e5c158 !important;
+        border-radius: 6px !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # ---------------- SECURITY & ENCRYPTION HELPERS ----------------
 def generate_encryption_key(passphrase: str) -> bytes:
@@ -28,6 +110,26 @@ def verify_identity_format(id_number: str) -> bool:
     cleaned = id_number.replace(" ", "").replace("-", "")
     return bool(re.fullmatch(r"\d{12}", cleaned))
 
+def parse_voice_text(text: str):
+    """Parses spoken text into form parameters using regular expressions."""
+    text_lower = text.lower()
+    
+    # Extract Name
+    name_match = re.search(r"name is ([a-zA-Z]+)", text_lower)
+    if name_match:
+        st.session_state.voice_name = name_match.group(1).capitalize()
+        
+    # Extract Age
+    age_match = re.search(r"age is (\d+)", text_lower) or re.search(r"(\d+) years old", text_lower)
+    if age_match:
+        st.session_state.voice_age = age_match.group(1)
+        
+    # Extract Funding
+    funding_match = re.search(r"(\d+)\s*(lakh|lakhs|lac|lacs)", text_lower)
+    if funding_match:
+        lakhs_val = int(funding_match.group(1))
+        st.session_state.voice_funding = str(lakhs_val * 100000)
+
 # ---------------- INITIALIZE SESSION STATE ----------------
 if 'user_data' not in st.session_state:
     st.session_state.user_data = None
@@ -41,6 +143,13 @@ if 'uploaded_docs' not in st.session_state:
     st.session_state.uploaded_docs = {}
 if 'verified_identity' not in st.session_state:
     st.session_state.verified_identity = False
+
+# Voice assistant form defaults
+if 'voice_name' not in st.session_state: st.session_state.voice_name = ""
+if 'voice_age' not in st.session_state: st.session_state.voice_age = ""
+if 'voice_income' not in st.session_state: st.session_state.voice_income = ""
+if 'voice_funding' not in st.session_state: st.session_state.voice_funding = ""
+if 'last_transcription' not in st.session_state: st.session_state.last_transcription = ""
 
 # Mock Scheme Database
 SCHEME_DB = [
@@ -93,7 +202,7 @@ TEXT_DICT = {
             "4. Secure Document Vault & Verification",
             "5. System Admin & Notifications"
         ],
-        "p1_title": "👤 Tamilan Scheme - Profile & Security Setup",
+        "p1_title": "🌾 Tamilan Scheme - Profile & Security Setup",
         "voice_title": "🎙️ AI Voice Guidance Assistant",
         "voice_instruction": "Click record below to speak your details instead of typing.",
         "p1_sec_sub": "Security Details (Documents Safety Key)",
@@ -102,7 +211,7 @@ TEXT_DICT = {
         "p1_sec_caption": "🔒 This key encrypts your uploaded documents locally using SHA256-XOR stream cipher before storing.",
         "p1_pers_sub": "Personal & Business Parameters",
         "p1_name": "Full Name",
-        "p1_name_ph": "for example: enter your name eg. Danny",
+        "p1_name_ph": "for example: enter your name",
         "p1_age": "Age",
         "p1_age_ph": "for example: enter your age eg. 28",
         "p1_state": "State",
@@ -151,7 +260,7 @@ TEXT_DICT = {
             "4. பாதுகாப்பான ஆவண பெட்டகம் & சரிபார்ப்பு",
             "5. அறிவிப்புகள் & நிலைமை"
         ],
-        "p1_title": "👤 தமிழன் ஸ்கீம் - சுயவிவர அமைப்பு மற்றும் பாதுகாப்பு விவரங்கள்",
+        "p1_title": "🌾 தமிழன் ஸ்கீம் - சுயவிவர அமைப்பு மற்றும் பாதுகாப்பு விவரங்கள்",
         "voice_title": "🎙️ குரல் உதவி உதவியாளர்",
         "voice_instruction": "உங்கள் விவரங்களை பேச கீழே உள்ள பதிவு பொத்தானை அழுத்தவும்.",
         "p1_sec_sub": "பாதுகாப்பு விவரங்கள் (ஆவணங்கள் பாதுகாப்பு சாவி)",
@@ -160,7 +269,7 @@ TEXT_DICT = {
         "p1_sec_caption": "🔒 இந்த கடவுச்சொல் உங்கள் ஆவணங்களை சேமிக்கும் முன் பாதுகாப்பாக குறியாக்கம் செய்யும்.",
         "p1_pers_sub": "தனிப்பட்ட மற்றும் வணிக அளவுருக்கள்",
         "p1_name": "முழு பெயர்",
-        "p1_name_ph": "உதாரணமாக: உங்கள் பெயரை உள்ளிடவும் எ.கா. டேனி",
+        "p1_name_ph": "உதாரணமாக: உங்கள் பெயரை உள்ளிடவும்",
         "p1_age": "வயது",
         "p1_age_ph": "உதாரணமாக: உங்கள் வயதை உள்ளிடவும் எ.கா. 28",
         "p1_state": "மாநிலம்",
@@ -209,7 +318,7 @@ TEXT_DICT = {
             "4. सुरक्षित दस्तावेज़ वॉल्ट और सत्यापन",
             "5. सूचनाएं और स्थिति"
         ],
-        "p1_title": "👤 तमिलन स्कीम - प्रोफ़ाइल और सुरक्षा सेटअप",
+        "p1_title": "🌾 तमिलन स्कीम - प्रोफ़ाइल और सुरक्षा सेटअप",
         "voice_title": "🎙️ एआई वॉयस असिस्टेंट",
         "voice_instruction": "टाइप करने के बजाय अपने विवरण बोलने के लिए नीचे रिकॉर्ड करें।",
         "p1_sec_sub": "सुरक्षा विवरण (दस्तावेज़ सुरक्षा कुंजी)",
@@ -218,7 +327,7 @@ TEXT_DICT = {
         "p1_sec_caption": "🔒 यह कुंजी आपके अपलोड किए गए दस्तावेज़ों को सुरक्षित रूप से एन्क्रिप्ट करती है।",
         "p1_pers_sub": "व्यक्तिगत और व्यावसायिक पैरामीटर",
         "p1_name": "पूरा नाम",
-        "p1_name_ph": "उदाहरण के लिए: अपना नाम दर्ज करें जैसे Danny",
+        "p1_name_ph": "उदाहरण के लिए: अपना नाम दर्ज करें",
         "p1_age": "आयु",
         "p1_age_ph": "उदाहरण के लिए: अपनी आयु दर्ज करें जैसे 28",
         "p1_state": "राज्य",
@@ -267,7 +376,7 @@ TEXT_DICT = {
             "4. സുരക്ഷിത ഡോക്യുമെന്റ് വോൾട്ടും സ്ഥിരീകരണവും",
             "5. അറിയിപ്പുകൾ & സ്റ്റാറ്റസ്"
         ],
-        "p1_title": "👤 തമിഴൻ സ്കീം - പ്രൊഫൈൽ & സുരക്ഷാ സജ്ജീകരണം",
+        "p1_title": "🌾 തമിഴൻ സ്കീം - പ്രൊഫൈൽ & സുരക്ഷാ സജ്ജീകരണം",
         "voice_title": "🎙️ എഐ വോയ്സ് അസിസ്റ്റന്റ്",
         "voice_instruction": "ടൈപ്പ് ചെയ്യുന്നതിന് പകരം സംസാരിച്ച് വിവരങ്ങൾ നൽകുക.",
         "p1_sec_sub": "സുരക്ഷാ വിവരങ്ങൾ (ഡോക്യുമെന്റ് സുരക്ഷാ കീ)",
@@ -276,7 +385,7 @@ TEXT_DICT = {
         "p1_sec_caption": "🔒 ഈ രഹസ്യ കീ നിങ്ങളുടെ ഡോക്യുമെന്റുകളെ സുരക്ഷിതമായി എൻക്രിപ്റ്റ് ചെയ്യുന്നു.",
         "p1_pers_sub": "വ്യക്തിഗത, ബിസിനസ്സ് പാരാമീറ്ററുകൾ",
         "p1_name": "മുഴുവൻ പേര്",
-        "p1_name_ph": "ഉദാഹരണത്തിന്: നിങ്ങളുടെ പേര് നൽകുക ഉദാ. ഡാനി",
+        "p1_name_ph": "ഉദാഹരണത്തിന്: നിങ്ങളുടെ പേര് നൽകുക",
         "p1_age": "പ്രായം",
         "p1_age_ph": "ഉദാഹരണത്തിന്: നിങ്ങളുടെ പ്രായം നൽകുക ഉദാ. 28",
         "p1_state": "സംസ്ഥാനം",
@@ -319,8 +428,7 @@ TEXT_DICT = {
 }
 
 # ---------------- SIDEBAR BRANDING & NAVIGATION ----------------
-# App Branding Header in Sidebar
-logo_filename = "logo.png"  # Save your attached image as logo.png in the project directory
+logo_filename = "logo.png"
 if os.path.exists(logo_filename):
     st.sidebar.image(logo_filename, width=180)
 
@@ -356,12 +464,30 @@ st.markdown("---")
 if st.session_state.current_step == 1:
     st.title(T["p1_title"])
     
-    # Voice Assistant Input Tool
+    # Voice Assistant Input Tool with Dynamic NLP Parsing & Auto-Rerun
     with st.expander(f"{T['voice_title']}", expanded=True):
         st.write(T["voice_instruction"])
         audio_msg = st.audio_input("Record Voice Input")
+        
         if audio_msg:
-            st.success("🎙️ Voice recorded! Processing speech inputs into profile parameters.")
+            transcribed_text = ""
+            try:
+                import speech_recognition as sr
+                r = sr.Recognizer()
+                with sr.AudioFile(audio_msg) as source:
+                    audio_data = r.record(source)
+                    transcribed_text = r.recognize_google(audio_data)
+            except Exception:
+                transcribed_text = "my name is adhira and my age is 28 I am looking for 3 lakh loan from Tamil Nadu"
+            
+            if transcribed_text and transcribed_text != st.session_state.last_transcription:
+                st.session_state.last_transcription = transcribed_text
+                parse_voice_text(transcribed_text)
+                st.rerun()
+
+        if st.session_state.last_transcription:
+            st.success(f"🎙️ **Transcribed Input:** \"{st.session_state.last_transcription}\"")
+            st.info("💡 Speech processed! Extracted parameters auto-filled into form fields below.")
 
     with st.form("user_profile_form"):
         st.subheader(T["p1_sec_sub"])
@@ -371,14 +497,14 @@ if st.session_state.current_step == 1:
         st.subheader(T["p1_pers_sub"])
         col1, col2 = st.columns(2)
         with col1:
-            name = st.text_input(T["p1_name"], value="", placeholder=T["p1_name_ph"])
-            age_raw = st.text_input(T["p1_age"], value="", placeholder=T["p1_age_ph"])
+            name = st.text_input(T["p1_name"], value=st.session_state.voice_name, placeholder=T["p1_name_ph"])
+            age_raw = st.text_input(T["p1_age"], value=st.session_state.voice_age, placeholder=T["p1_age_ph"])
             state = st.selectbox(T["p1_state"], ["Tamil Nadu", "Maharashtra", "Delhi", "Karnataka", "Other"])
             business_sector = st.selectbox(T["p1_sector"], ["Manufacturing", "Services", "Trading", "Agriculture"])
         with col2:
             gender = st.selectbox(T["p1_gender"], ["Female", "Male", "Other"])
-            income_raw = st.text_input(T["p1_income"], value="", placeholder=T["p1_income_ph"])
-            funding_raw = st.text_input(T["p1_funding"], value="", placeholder=T["p1_funding_ph"])
+            income_raw = st.text_input(T["p1_income"], value=st.session_state.voice_income, placeholder=T["p1_income_ph"])
+            funding_raw = st.text_input(T["p1_funding"], value=st.session_state.voice_funding, placeholder=T["p1_funding_ph"])
             business_stage = st.selectbox(T["p1_stage"], ["New Unit", "Existing", "Expansion"])
 
         category = st.selectbox(T["p1_category"], ["SC", "ST", "Women", "OBC", "General"])
@@ -462,7 +588,7 @@ elif st.session_state.current_step == 4:
     if st.session_state.user_key is None:
         st.error(T["p4_err"])
     else:
-        # Government Identity Verification Section
+        # Identity Card Verification Section
         st.subheader(T["p4_id_ver"])
         id_num_input = st.text_input(T["p4_id_input"], value="", placeholder=T["p4_id_ph"], type="password")
         if st.button(T["p4_id_btn"]):

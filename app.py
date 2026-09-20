@@ -107,11 +107,11 @@ if "authenticated" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# Dynamic Session variables for form input
 if 'voice_name' not in st.session_state: st.session_state.voice_name = ""
 if 'voice_age' not in st.session_state: st.session_state.voice_age = ""
 if 'voice_income' not in st.session_state: st.session_state.voice_income = ""
 if 'voice_funding' not in st.session_state: st.session_state.voice_funding = ""
+if 'last_transcription' not in st.session_state: st.session_state.last_transcription = ""
 
 # --- MULTILINGUAL DICTIONARY FOR ENTIRE PORTAL ---
 TEXT_DICT = {
@@ -138,8 +138,8 @@ TEXT_DICT = {
             "5. AI Chatbot & Real-Time Alerts"
         ],
         "p1_title": "🌾 Tamilan Scheme - Profile & Security Setup",
-        "voice_title": "🎙️ Real-time Web AI Voice Input",
-        "voice_instruction": "Click 'Start Speaking' button below and speak your details (e.g., 'My name is Rahul, age is 30, income is 250000, funding 300000').",
+        "voice_title": "🎙️ AI Voice Guidance Assistant",
+        "voice_instruction": "Click record below to speak your details instead of typing.",
         "p1_sec_sub": "Security Details (Documents Safety Key)",
         "p1_sec_pass": "Create Secret Key / Passphrase for Documents Encryption",
         "p1_sec_ph": "enter your secret passphrase eg. Pass@123",
@@ -211,7 +211,7 @@ TEXT_DICT = {
         ],
         "p1_title": "🌾 தமிழன் ஸ்கீம் - சுயவிவர அமைப்பு மற்றும் பாதுகாப்பு",
         "voice_title": "🎙️ குரல் உதவி உதவியாளர்",
-        "voice_instruction": "கீழே உள்ள 'Start Speaking' பொத்தானை அழுத்தி பேசவும்.",
+        "voice_instruction": "உங்கள் விவரங்களை பேச கீழே உள்ள பதிவு பொத்தானை அழுத்தவும்.",
         "p1_sec_sub": "பாதுகாப்பு விவரங்கள்",
         "p1_sec_pass": "ரகசிய கடவுச்சொல் உருவாக்கவும்",
         "p1_sec_ph": "உதாரணமாக: Pass@123",
@@ -283,7 +283,7 @@ TEXT_DICT = {
         ],
         "p1_title": "🌾 तमिलन स्कीम - प्रोफ़ाइल और सुरक्षा सेटअप",
         "voice_title": "🎙️ एआई वॉयस असिस्टेंट",
-        "voice_instruction": "बोलकर विवरण दर्ज करें।",
+        "voice_instruction": "टाइप करने के बजाय विवरण बोलने के लिए रिकॉर्ड करें।",
         "p1_sec_sub": "सुरक्षा विवरण",
         "p1_sec_pass": "गुप्त पासफ़्रेज़ बनाएं",
         "p1_sec_ph": "जैसे Pass@123",
@@ -579,6 +579,29 @@ else:
         cleaned = id_number.replace(" ", "").replace("-", "")
         return bool(re.fullmatch(r"\d{12}", cleaned))
 
+    def parse_voice_text(text: str):
+        text_lower = text.lower()
+        
+        name_match = re.search(r"name is ([a-zA-Z]+)", text_lower) or re.search(r"i am ([a-zA-Z]+)", text_lower)
+        if name_match:
+            st.session_state.voice_name = name_match.group(1).capitalize()
+            
+        age_match = re.search(r"age is (\d+)", text_lower) or re.search(r"(\d+) years old", text_lower) or re.search(r"age (\d+)", text_lower)
+        if age_match:
+            st.session_state.voice_age = age_match.group(1)
+            
+        income_match = re.search(r"income is (\d+)", text_lower) or re.search(r"income (\d+)", text_lower)
+        if income_match:
+            st.session_state.voice_income = income_match.group(1)
+            
+        funding_match = re.search(r"(\d+)\s*(lakh|lakhs|lac|lacs)", text_lower) or re.search(r"funding (\d+)", text_lower)
+        if funding_match:
+            try:
+                lakhs_val = int(funding_match.group(1))
+                st.session_state.voice_funding = str(lakhs_val * 100000)
+            except ValueError:
+                pass
+
     if 'user_data' not in st.session_state:
         st.session_state.user_data = None
     if 'current_step' not in st.session_state:
@@ -610,97 +633,30 @@ else:
     if st.session_state.current_step == 1:
         st.title(T["p1_title"])
         
-        # BROWSER REAL-TIME WEB SPEECH RECOGNITION (HTML5/JS)
+        # RESTORED BEAUTIFUL STREAMLIT AUDIO RECORDER
         with st.expander(f"{T['voice_title']}", expanded=True):
             st.write(T["voice_instruction"])
+            audio_msg = st.audio_input("Record Voice Input")
             
-            # JavaScript Web Speech Component
-            speech_js = """
-            <div style="font-family: sans-serif; text-align: center;">
-                <button id="startSpeechBtn" style="
-                    background-color: #e5c158;
-                    color: #121418;
-                    border: none;
-                    border-radius: 6px;
-                    padding: 10px 20px;
-                    font-weight: bold;
-                    font-size: 15px;
-                    cursor: pointer;
-                ">🎙️ Click & Start Speaking</button>
-                <p id="speechStatus" style="color: #9ca3af; font-size: 13px; margin-top: 8px;">Status: Waiting to record...</p>
-                <div id="outputBox" style="
-                    background: #1a1d24;
-                    color: #81c784;
-                    padding: 10px;
-                    border-radius: 6px;
-                    border: 1px solid #2a2e39;
-                    margin-top: 10px;
-                    font-weight: 500;
-                    display: none;
-                "></div>
-            </div>
+            if audio_msg:
+                transcribed_text = ""
+                try:
+                    import speech_recognition as sr
+                    r = sr.Recognizer()
+                    with sr.AudioFile(audio_msg) as source:
+                        audio_data = r.record(source)
+                        transcribed_text = r.recognize_google(audio_data)
+                except Exception:
+                    transcribed_text = ""
+                
+                if transcribed_text and transcribed_text != st.session_state.last_transcription:
+                    st.session_state.last_transcription = transcribed_text
+                    parse_voice_text(transcribed_text)
+                    st.rerun()
 
-            <script>
-            const btn = document.getElementById('startSpeechBtn');
-            const status = document.getElementById('speechStatus');
-            const output = document.getElementById('outputBox');
-
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                const recognition = new SpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = false;
-                recognition.lang = 'en-IN';
-
-                btn.addEventListener('click', () => {
-                    recognition.start();
-                    status.innerText = "🎙️ Listening... Speak clearly into microphone";
-                    status.style.color = "#e5c158";
-                });
-
-                recognition.onresult = (event) => {
-                    const text = event.results[0][0].transcript;
-                    status.innerText = "✅ Speech Recognized!";
-                    status.style.color = "#81c784";
-                    output.style.display = "block";
-                    output.innerText = 'Recognized Speech: "' + text + '"';
-                    
-                    // Parse parameters in JS and auto fill Streamlit input fields
-                    const textLower = text.toLowerCase();
-                    const parentDoc = window.parent.document;
-                    
-                    // Dynamic regex extraction
-                    const nameMatch = textLower.match(/name is ([a-zA-Z]+)/) || textLower.match(/i am ([a-zA-Z]+)/);
-                    const ageMatch = textLower.match(/age is (\d+)/) || textLower.match(/(\d+) years old/) || textLower.match(/age (\d+)/);
-                    const incomeMatch = textLower.match(/income is (\d+)/) || textLower.match(/income (\d+)/);
-                    const fundingMatch = textLower.match(/(\d+)\s*(lakh|lakhs|lac|lacs)/) || textLower.match(/funding (\d+)/);
-
-                    const inputs = parentDoc.querySelectorAll('input[type="text"]');
-                    if (inputs.length >= 4) {
-                        if (nameMatch) inputs[0].value = nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1);
-                        if (ageMatch) inputs[1].value = ageMatch[1];
-                        if (incomeMatch) inputs[2].value = incomeMatch[1];
-                        if (fundingMatch) {
-                            let val = parseInt(fundingMatch[1]);
-                            inputs[3].value = textLower.includes("lakh") ? (val * 100000).toString() : val.toString();
-                        }
-                        inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-                        inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
-                        inputs[2].dispatchEvent(new Event('input', { bubbles: true }));
-                        inputs[3].dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-                };
-
-                recognition.onerror = (event) => {
-                    status.innerText = "❌ Microphone error or no speech detected. Try again!";
-                    status.style.color = "#f87171";
-                };
-            } else {
-                status.innerText = "Browser doesn't support Web Speech API. Use Chrome/Edge.";
-            }
-            </script>
-            """
-            components.html(speech_js, height=130)
+            if st.session_state.last_transcription:
+                st.success(f"🎙️ **Transcribed Input:** \"{st.session_state.last_transcription}\"")
+                st.info("💡 Speech processed! Recognized parameters auto-filled into form fields below.")
 
         with st.form("user_profile_form"):
             st.subheader(T["p1_sec_sub"])

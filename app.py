@@ -76,10 +76,18 @@ st.markdown(
         border-color: #d8b244 !important;
         box-shadow: 0 0 0 1px #d8b244 !important;
     }
+    
+    /* Clean Sidebar Dropdown */
+    .stSelectbox > div > div {
+        background-color: #1a1d24 !important;
+        color: #e5c158 !important;
+        border: 1px solid #2a2e39 !important;
+        border-radius: 6px !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. INITIALIZE SESSION STATES
+# 3. INITIALIZE SESSION STATES (Persists across interactions)
 if 'lang' not in st.session_state:
     st.session_state.lang = "English"
 
@@ -424,7 +432,7 @@ SCHEME_DB = [
     }
 ]
 
-# --- GLOBAL SIDEBAR SETUP ---
+# --- CLEAN SIDEBAR LANGUAGE SELECTION (Dropdown style) ---
 logo_filename = "logo.png"
 if os.path.exists(logo_filename):
     st.sidebar.image(logo_filename, width=180)
@@ -434,11 +442,11 @@ st.sidebar.caption("Government Scheme Portal & AI Engine")
 st.sidebar.markdown("---")
 
 lang_list = ["English", "Tamil (தமிழ்)", "Hindi (हिंदी)", "Malayalam (മലയാളം)"]
-selected_lang_sidebar = st.sidebar.radio(
-    "Select Interface Language:", 
+selected_lang_sidebar = st.sidebar.selectbox(
+    "🌐 Select Interface Language:", 
     lang_list,
     index=lang_list.index(st.session_state.lang),
-    key="sidebar_lang_radio"
+    key="sidebar_lang_selectbox"
 )
 
 if selected_lang_sidebar != st.session_state.lang:
@@ -466,21 +474,9 @@ def reset_password_dialog():
         else:
             st.error("Please enter a valid Username or Identity Number.")
 
-# --- DYNAMIC AUTHENTICATION PAGE ---
+# --- DYNAMIC MULTILINGUAL AUTHENTICATION PAGE ---
 def auth_page():
-    col_t, col_l = st.columns([3, 1])
-    with col_t:
-        st.title(T["auth_title"])
-    with col_l:
-        selected_lang_main = st.selectbox(
-            "🌐 Language", 
-            lang_list, 
-            index=lang_list.index(st.session_state.lang),
-            key="main_lang_select"
-        )
-        if selected_lang_main != st.session_state.lang:
-            st.session_state.lang = selected_lang_main
-            st.rerun()
+    st.title(T["auth_title"])
             
     tab1, tab2 = st.tabs([T["login_tab"], T["signup_tab"]])
     
@@ -492,6 +488,7 @@ def auth_page():
         col1, col2 = st.columns([1, 1])
         with col1:
             if st.button(T["login_btn"], use_container_width=True):
+                # Normalized key match for robust multilingual login
                 if username in st.session_state["user_db"] and st.session_state["user_db"][username] == password:
                     st.session_state["authenticated"] = True
                     st.session_state["current_username"] = username
@@ -514,10 +511,10 @@ def auth_page():
             elif new_password != confirm_password:
                 st.error("Passwords do not match!")
             elif new_username in st.session_state["user_db"]:
-                st.warning("Username is already registered.")
+                st.warning("Username is already registered. Please login!")
             else:
                 st.session_state["user_db"][new_username] = new_password
-                st.success(f"Account created successfully for '{new_username}'!")
+                st.success(f"Account created successfully for '{new_username}'! Switch to Login tab.")
 
 if not st.session_state["authenticated"]:
     auth_page()

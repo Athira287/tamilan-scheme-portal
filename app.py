@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. HIDE GITHUB TOOLBAR & BRANDING BADGES
+# 2. CLEAN CSS & SIDEBAR CONTROLS
 st.markdown(
     """
     <style>
@@ -26,6 +26,14 @@ st.markdown(
     header[data-testid="stHeader"] {
         background: transparent !important;
         height: 2.5rem !important;
+    }
+    
+    /* Keep Sidebar Toggle Always Accessible */
+    [data-testid="stSidebarCollapseButton"] {
+        display: block !important;
+        visibility: visible !important;
+        color: #e5c158 !important;
+        z-index: 100000 !important;
     }
     
     .stApp {
@@ -77,7 +85,6 @@ st.markdown(
         box-shadow: 0 0 0 1px #d8b244 !important;
     }
     
-    /* Clean Sidebar Dropdown */
     .stSelectbox > div > div {
         background-color: #1a1d24 !important;
         color: #e5c158 !important;
@@ -87,7 +94,7 @@ st.markdown(
     </style>
 """, unsafe_allow_html=True)
 
-# 3. INITIALIZE SESSION STATES (Persists across interactions)
+# 3. INITIALIZE SESSION STATES
 if 'lang' not in st.session_state:
     st.session_state.lang = "English"
 
@@ -129,25 +136,25 @@ TEXT_DICT = {
         "voice_instruction": "Click record below to speak your details instead of typing.",
         "p1_sec_sub": "Security Details (Documents Safety Key)",
         "p1_sec_pass": "Create Secret Key / Passphrase for Documents Encryption",
-        "p1_sec_ph": "for example: enter your secret passphrase eg. Pass@123",
+        "p1_sec_ph": "enter your secret passphrase eg. Pass@123",
         "p1_sec_caption": "🔒 Encrypts your uploaded documents locally using SHA256-XOR stream cipher.",
         "p1_pers_sub": "Personal & Business Parameters",
-        "p1_name": "Full Name",
-        "p1_name_ph": "enter your name",
-        "p1_age": "Age",
-        "p1_age_ph": "enter your age eg. 28",
+        "p1_name": "Full Name *",
+        "p1_name_ph": "enter your full name",
+        "p1_age": "Age *",
+        "p1_age_ph": "enter age (e.g. 28)",
         "p1_state": "State",
         "p1_sector": "Sector",
         "p1_gender": "Gender",
-        "p1_income": "Annual Household Income (₹)",
-        "p1_income_ph": "enter annual income eg. 250000",
-        "p1_funding": "Funding Required (₹)",
-        "p1_funding_ph": "enter funding required eg. 300000",
+        "p1_income": "Annual Household Income (₹) *",
+        "p1_income_ph": "enter income (e.g. 250000)",
+        "p1_funding": "Funding Required (₹) *",
+        "p1_funding_ph": "enter funding amount (e.g. 300000)",
         "p1_stage": "Business Stage",
         "p1_category": "Target Category",
         "p1_btn": "Save & Go to Matching ➡️",
         "p2_title": "🤖 AI Scheme Matching Engine & Insights",
-        "p2_warn": "Please complete Profile Setup (Step 1) first!",
+        "p2_warn": "⚠️ No profile data found! Please complete Profile Setup (Step 1) first by filling in your Name, Age, Income, and Funding requirements.",
         "p2_profile": "Profile Loaded",
         "p2_ben": "Financial Benefits",
         "p2_docs": "Required Documents",
@@ -204,22 +211,22 @@ TEXT_DICT = {
         "p1_sec_ph": "உதாரணமாக: Pass@123",
         "p1_sec_caption": "🔒 உங்கள் ஆவணங்களை சேமிக்கும் முன் பாதுகாப்பாக குறியாக்கம் செய்யும்.",
         "p1_pers_sub": "தனிப்பட்ட மற்றும் வணிக அளவுருக்கள்",
-        "p1_name": "முழு பெயர்",
+        "p1_name": "முழு பெயர் *",
         "p1_name_ph": "உங்கள் பெயரை உள்ளிடவும்",
-        "p1_age": "வயது",
+        "p1_age": "வயது *",
         "p1_age_ph": "உங்கள் வயதை உள்ளிடவும் எ.கா. 28",
         "p1_state": "மாநிலம்",
         "p1_sector": "வணிக துறை",
         "p1_gender": "பாலினம்",
-        "p1_income": "ஆண்டு குடும்ப வருமானம் (₹)",
+        "p1_income": "ஆண்டு குடும்ப வருமானம் (₹) *",
         "p1_income_ph": "குடும்ப வருமானத்தை உள்ளிடவும் எ.கா. 250000",
-        "p1_funding": "தேவைப்படும் நிதி (₹)",
+        "p1_funding": "தேவைப்படும் நிதி (₹) *",
         "p1_funding_ph": "தேவையான நிதியை உள்ளிடவும் எ.கா. 300000",
         "p1_stage": "வணிக நிலை",
         "p1_category": "இலக்கு பிரிவு",
         "p1_btn": "சேமித்துத் தொடரவும் ➡️",
         "p2_title": "🤖 AI திட்ட பொருந்தும் இயந்திரம்",
-        "p2_warn": "தயவுசெய்து முதலில் பக்கம் 1 ஐ பூர்த்தி செய்யவும்!",
+        "p2_warn": "⚠️ சுயவிவர தகவல்கள் இல்லை! தயவுசெய்து முதலில் பக்கம் 1-ல் உங்கள் பெயர், வயது, வருமானம் மற்றும் நிதி தேவைகளை பூர்த்தி செய்யவும்.",
         "p2_profile": "ஏற்றப்பட்ட சுயவிவரம்",
         "p2_ben": "நன்மைகள்",
         "p2_docs": "தேவையான ஆவணங்கள்",
@@ -276,22 +283,22 @@ TEXT_DICT = {
         "p1_sec_ph": "जैसे Pass@123",
         "p1_sec_caption": "🔒 दस्तावेज सुरक्षित रूप से एन्क्रिप्ट किए जाते हैं।",
         "p1_pers_sub": "व्यक्तिगत और व्यावसायिक पैरामीटर",
-        "p1_name": "पूरा नाम",
+        "p1_name": "पूरा नाम *",
         "p1_name_ph": "अपना नाम दर्ज करें",
-        "p1_age": "आयु",
+        "p1_age": "आयु *",
         "p1_age_ph": "आयु दर्ज करें जैसे 28",
         "p1_state": "राज्य",
         "p1_sector": "व्यवसाय क्षेत्र",
         "p1_gender": "लिंग",
-        "p1_income": "वार्षिक घरेलू आय (₹)",
+        "p1_income": "वार्षिक घरेलू आय (₹) *",
         "p1_income_ph": "वार्षिक आय दर्ज करें जैसे 250000",
-        "p1_funding": "आवश्यक धन (₹)",
+        "p1_funding": "आवश्यक धन (₹) *",
         "p1_funding_ph": "आवश्यक धन दर्ज करें जैसे 300000",
         "p1_stage": "व्यापार चरण",
         "p1_category": "लक्षित वर्ग",
         "p1_btn": "सहेजें और आगे बढ़ें ➡️",
         "p2_title": "🤖 एआई योजना मिलान इंजन",
-        "p2_warn": "कृपया पहले पृष्ठ 1 पूरा करें!",
+        "p2_warn": "⚠️ कोई प्रोफ़ाइल डेटा नहीं मिला! कृपया पहले पृष्ठ 1 पर अपना नाम, आयु, आय और धन संबंधी विवरण भरें।",
         "p2_profile": "प्रोफ़ाइल लोड की गई",
         "p2_ben": "लाभ",
         "p2_docs": "आवश्यक दस्तावेज",
@@ -348,22 +355,22 @@ TEXT_DICT = {
         "p1_sec_ph": "ഉദാ. Pass@123",
         "p1_sec_caption": "🔒 ഡോക്യുമെന്റുകൾ എൻക്രിപ്റ്റ് ചെയ്യുന്നു.",
         "p1_pers_sub": "വ്യക്തിഗത, ബിസിനസ്സ് പാരാമീറ്ററുകൾ",
-        "p1_name": "മുഴുവൻ പേര്",
+        "p1_name": "മുഴുവൻ പേര് *",
         "p1_name_ph": "പേര് നൽകുക",
-        "p1_age": "പ്രായം",
+        "p1_age": "പ്രായം *",
         "p1_age_ph": "പ്രായം നൽകുക ഉദാ. 28",
         "p1_state": "സംസ്ഥാനം",
         "p1_sector": "ബിസിനസ്സ് മേഖല",
         "p1_gender": "ലിംഗഭേദം",
-        "p1_income": "വാർഷിക കുടുംബ വരുമാനം (₹)",
+        "p1_income": "വാർഷിക കുടുംബ വരുമാനം (₹) *",
         "p1_income_ph": "വരുമാനം നൽകുക ഉദാ. 250000",
-        "p1_funding": "ആവശ്യമായ ഫണ്ട് (₹)",
+        "p1_funding": "ആവശ്യമായ ഫണ്ട് (₹) *",
         "p1_funding_ph": "ഫണ്ട് നൽകുക ഉദാ. 300000",
         "p1_stage": "ബിസിനസ് ഘട്ടം",
         "p1_category": "വിഭാഗം",
         "p1_btn": "സേവ് ചെയ്ത് തുടരുക ➡️",
         "p2_title": "🤖 എഐ സ്കീം മാച്ചിംഗ് എഞ്ചിൻ",
-        "p2_warn": "ദയവായി പേജ് 1 പൂർത്തിയാക്കുക!",
+        "p2_warn": "⚠️ പ്രൊഫൈൽ വിവരങ്ങൾ ലഭ്യമല്ല! ദയവായി ആദ്യം പേജ് 1-ൽ നിങ്ങളുടെ വിവരങ്ങൾ നൽകുക.",
         "p2_profile": "പ്രൊഫൈൽ ലോഡ് ചെയ്തു",
         "p2_ben": "ആനുകൂല്യങ്ങൾ",
         "p2_docs": "ആവശ്യമായ രേഖകൾ",
@@ -432,7 +439,12 @@ SCHEME_DB = [
     }
 ]
 
-# --- CLEAN SIDEBAR LANGUAGE SELECTION (Dropdown style) ---
+# --- SIDEBAR TOGGLE & LANGUAGE SELECTION ---
+col_side_toggle, col_empty = st.columns([1, 5])
+with col_side_toggle:
+    if st.button("☰ Open / Close Navigation Menu"):
+        pass
+
 logo_filename = "logo.png"
 if os.path.exists(logo_filename):
     st.sidebar.image(logo_filename, width=180)
@@ -488,7 +500,6 @@ def auth_page():
         col1, col2 = st.columns([1, 1])
         with col1:
             if st.button(T["login_btn"], use_container_width=True):
-                # Normalized key match for robust multilingual login
                 if username in st.session_state["user_db"] and st.session_state["user_db"][username] == password:
                     st.session_state["authenticated"] = True
                     st.session_state["current_username"] = username
@@ -619,39 +630,39 @@ else:
             st.subheader(T["p1_pers_sub"])
             col1, col2 = st.columns(2)
             with col1:
-                name = st.text_input(T["p1_name"], value=st.session_state.voice_name, placeholder=T["p1_name_ph"])
-                age_raw = st.text_input(T["p1_age"], value=st.session_state.voice_age, placeholder=T["p1_age_ph"])
+                name = st.text_input(T["p1_name"], value=st.session_state.voice_name, placeholder=T["p1_name_ph"]).strip()
+                age_raw = st.text_input(T["p1_age"], value=st.session_state.voice_age, placeholder=T["p1_age_ph"]).strip()
                 state = st.selectbox(T["p1_state"], ["Tamil Nadu", "Maharashtra", "Delhi", "Karnataka", "Other"])
                 business_sector = st.selectbox(T["p1_sector"], ["Manufacturing", "Services", "Trading", "Agriculture"])
             with col2:
                 gender = st.selectbox(T["p1_gender"], ["Female", "Male", "Other"])
-                income_raw = st.text_input(T["p1_income"], value=st.session_state.voice_income, placeholder=T["p1_income_ph"])
-                funding_raw = st.text_input(T["p1_funding"], value=st.session_state.voice_funding, placeholder=T["p1_funding_ph"])
+                income_raw = st.text_input(T["p1_income"], value=st.session_state.voice_income, placeholder=T["p1_income_ph"]).strip()
+                funding_raw = st.text_input(T["p1_funding"], value=st.session_state.voice_funding, placeholder=T["p1_funding_ph"]).strip()
                 business_stage = st.selectbox(T["p1_stage"], ["New Unit", "Existing", "Expansion"])
 
             category = st.selectbox(T["p1_category"], ["SC", "ST", "Women", "OBC", "General"])
 
             if st.form_submit_button(T["p1_btn"]):
-                passphrase = passphrase if passphrase else "DefaultPassphrase123"
-                name = name if name else "Applicant"
-                
-                try: age = int(age_raw) if age_raw else 28
-                except ValueError: age = 28
-                    
-                try: income = int(income_raw) if income_raw else 250000
-                except ValueError: income = 250000
-                    
-                try: funding_req = int(funding_raw) if funding_raw else 300000
-                except ValueError: funding_req = 300000
-
-                st.session_state.user_key = generate_encryption_key(passphrase)
-                st.session_state.user_data = {
-                    "name": name, "age": age, "state": state, "gender": gender,
-                    "income": income, "sector": business_sector, "stage": business_stage,
-                    "funding": funding_req, "category": category
-                }
-                go_next()
-                st.rerun()
+                # STRICT VALIDATION: Require actual input from user
+                if not name or not age_raw or not income_raw or not funding_raw:
+                    st.error(" Please fill in all required fields marked with * (Name, Age, Income, and Funding Amount) before proceeding!")
+                else:
+                    try:
+                        age = int(age_raw)
+                        income = int(income_raw)
+                        funding_req = int(funding_raw)
+                        
+                        passphrase = passphrase if passphrase else "DefaultPassphrase123"
+                        st.session_state.user_key = generate_encryption_key(passphrase)
+                        st.session_state.user_data = {
+                            "name": name, "age": age, "state": state, "gender": gender,
+                            "income": income, "sector": business_sector, "stage": business_stage,
+                            "funding": funding_req, "category": category
+                        }
+                        go_next()
+                        st.rerun()
+                    except ValueError:
+                        st.error(" Please enter valid numbers for Age, Income, and Funding Amount!")
 
     # ==================== PAGE 2: SCHEME MATCHING & AI INSIGHTS ====================
     elif st.session_state.current_step == 2:
@@ -673,19 +684,22 @@ else:
                 if state_match and age_match and sector_match and funding_match:
                     eligible_schemes.append(scheme)
 
-            for s in eligible_schemes:
-                with st.expander(f"🥇 {s['name']}", expanded=True):
-                    st.write(f"**{T['p2_ben']}:** {s['benefits']}")
-                    st.write(f"**{T['p2_docs']}:** {', '.join(s['documents'])}")
-                    
-                    # PERSONALIZED AI EXPLANATION MODULE
-                    st.markdown(f"**{T['p2_ai_explain']}**")
-                    ai_reasoning = (
-                        f"• Fits your age requirement ({user['age']} years old, within {s['min_age']}-{s['max_age']} limit).\n"
-                        f"• Covers your requested funding amount of ₹{user['funding']:,}.\n"
-                        f"• Explicitly tailored for the **{user['sector']}** sector in **{user['state']}**."
-                    )
-                    st.success(ai_reasoning)
+            if not eligible_schemes:
+                st.warning("No exact schemes matched your parameters. Try broadening your criteria on Step 1.")
+            else:
+                for s in eligible_schemes:
+                    with st.expander(f"🥇 {s['name']}", expanded=True):
+                        st.write(f"**{T['p2_ben']}:** {s['benefits']}")
+                        st.write(f"**{T['p2_docs']}:** {', '.join(s['documents'])}")
+                        
+                        # PERSONALIZED AI EXPLANATION MODULE
+                        st.markdown(f"**{T['p2_ai_explain']}**")
+                        ai_reasoning = (
+                            f"• Fits your age requirement ({user['age']} years old, within {s['min_age']}-{s['max_age']} limit).\n"
+                            f"• Covers your requested funding amount of ₹{user['funding']:,}.\n"
+                            f"• Explicitly tailored for the **{user['sector']}** sector in **{user['state']}**."
+                        )
+                        st.success(ai_reasoning)
 
     # ==================== PAGE 3: COMPARISON ====================
     elif st.session_state.current_step == 3:
@@ -748,7 +762,6 @@ else:
                 if st.session_state.verified_identity:
                     st.success("🆔 Government ID Format: Verified")
                 
-                # APPLICATION & DOCUMENT ASSISTANT (CHECKLIST)
                 st.write("📋 **Required Application Checklist:**")
                 all_required = set()
                 for s in SCHEME_DB:
@@ -768,12 +781,10 @@ else:
         
         tab_chat, tab_alerts = st.tabs(["🤖 Interactive Multilingual AI Agent", "🔔 New-Scheme Monitoring & Alerts"])
         
-        # TAB 1: CONVERSATIONAL CHATBOT AGENT
         with tab_chat:
             st.subheader("Ask AI Assistant about Government Schemes")
             st.caption("Supports English, Tamil, Hindi, and Malayalam natural language queries.")
             
-            # Display chat message history
             for msg in st.session_state.chat_history:
                 with st.chat_message(msg["role"]):
                     st.markdown(msg["content"])
@@ -784,7 +795,6 @@ else:
                 with st.chat_message("user"):
                     st.markdown(user_query)
                 
-                # Dynamic AI response logic
                 query_lower = user_query.lower()
                 response = ""
                 
@@ -805,12 +815,10 @@ else:
                 with st.chat_message("assistant"):
                     st.markdown(response)
 
-        # TAB 2: SCHEME MONITORING & AUTOMATIC ALERTS
         with tab_alerts:
             st.subheader("📡 Live Scheme Monitoring Broadcast Feed")
             st.info(T["p5_alert"])
             
-            # Simulated Automated Scheme Alerts
             alerts_data = [
                 {"date": "2026-09-15", "scheme": "TN MSME Technology Upgradation Grant", "status": "🆕 NEW RELEASE", "state": "Tamil Nadu"},
                 {"date": "2026-09-10", "scheme": "PM Vishwakarma Artisan Support", "status": "📢 APPLICATION OPEN", "state": "All India"},

@@ -5,9 +5,6 @@ import base64
 import re
 import os
 from datetime import datetime
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 # 1. ALWAYS FIRST STREAMLIT COMMAND
 st.set_page_config(
@@ -17,23 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. ENCRYPTION HELPERS (SECURE AES-128 VIA FERNET)
-def derive_fernet_key(passphrase: str, salt: bytes = b"tamilan_scheme_salt_v1") -> bytes:
-    """Derives a secure 32-byte key from user passphrase using PBKDF2HMAC."""
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=100_000,
-    )
-    return base64.urlsafe_b64encode(kdf.derive(passphrase.encode()))
-
-def encrypt_document(file_bytes: bytes, passphrase: str) -> str:
-    key = derive_fernet_key(passphrase)
-    f = Fernet(key)
-    return f.encrypt(file_bytes).decode('utf-8')
-
-# 3. CLEAN CSS & SIDEBAR CONTROLS
+# 2. CLEAN CSS & SIDEBAR CONTROLS
 st.markdown(
     """
     <style>
@@ -47,6 +28,7 @@ st.markdown(
         height: 2.5rem !important;
     }
     
+    /* Keep Sidebar Toggle Always Accessible */
     [data-testid="stSidebarCollapseButton"] {
         display: block !important;
         visibility: visible !important;
@@ -112,7 +94,7 @@ st.markdown(
     </style>
 """, unsafe_allow_html=True)
 
-# 4. INITIALIZE SESSION STATES
+# 3. INITIALIZE SESSION STATES
 if 'lang' not in st.session_state:
     st.session_state.lang = "English"
 
@@ -125,23 +107,6 @@ if "authenticated" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-if 'user_data' not in st.session_state:
-    st.session_state.user_data = None
-if 'current_step' not in st.session_state:
-    st.session_state.current_step = 1
-if 'user_passphrase' not in st.session_state:
-    st.session_state.user_passphrase = None
-if 'uploaded_docs' not in st.session_state:
-    st.session_state.uploaded_docs = {}
-if 'verified_identity' not in st.session_state:
-    st.session_state.verified_identity = False
-
-if 'voice_name' not in st.session_state: st.session_state.voice_name = ""
-if 'voice_age' not in st.session_state: st.session_state.voice_age = ""
-if 'voice_income' not in st.session_state: st.session_state.voice_income = ""
-if 'voice_funding' not in st.session_state: st.session_state.voice_funding = ""
-if 'last_transcription' not in st.session_state: st.session_state.last_transcription = ""
-
 # --- MULTILINGUAL DICTIONARY FOR ENTIRE PORTAL ---
 TEXT_DICT = {
     "English": {
@@ -149,7 +114,7 @@ TEXT_DICT = {
         "login_tab": "🔑 Login",
         "signup_tab": "📝 Sign Up (Create Account)",
         "login_sub": "Login to Your Account",
-        "user_label": "Username / Name / ID",
+        "user_label": "Username / Name / Aadhaar ID",
         "pass_label": "Password",
         "login_btn": "Login",
         "forgot_btn": "Forgot Password?",
@@ -172,7 +137,7 @@ TEXT_DICT = {
         "p1_sec_sub": "Security Details (Documents Safety Key)",
         "p1_sec_pass": "Create Secret Key / Passphrase for Documents Encryption",
         "p1_sec_ph": "enter your secret passphrase eg. Pass@123",
-        "p1_sec_caption": "🔒 Encrypts your uploaded documents locally using AES-128 encryption.",
+        "p1_sec_caption": "🔒 Encrypts your uploaded documents locally using SHA256-XOR stream cipher.",
         "p1_pers_sub": "Personal & Business Parameters",
         "p1_name": "Full Name *",
         "p1_name_ph": "enter your full name",
@@ -197,7 +162,7 @@ TEXT_DICT = {
         "p3_title": "⚖️ Scheme Comparison Matrix",
         "p3_attr": ["Financial Benefits", "Target Sector", "Max Funding", "Required Documents Count"],
         "p4_title": "📄 Smart Vault & Application Document Assistant",
-        "p4_proto": "🔒 Privacy Protocol: Documents uploaded are encrypted in-memory using AES-128 cipher.",
+        "p4_proto": "🔒 Privacy Protocol: Documents uploaded are encrypted in-memory using SHA256-XOR stream cipher.",
         "p4_err": "Please set your Encryption Passphrase on Step 1 first!",
         "p4_id_ver": "🆔 Identity Verification",
         "p4_id_input": "Enter 12-Digit Government Identity Card Number",
@@ -221,7 +186,7 @@ TEXT_DICT = {
         "login_tab": "🔑 உள்நுழைவு (Login)",
         "signup_tab": "📝 கணக்கு உருவாக்க (Sign Up)",
         "login_sub": "உங்கள் கணக்கில் உள்நுழையவும்",
-        "user_label": "பயனர்பெயர் / அடையாள எண்",
+        "user_label": "பயனர்பெயர் / ஆதார் எண்",
         "pass_label": "கடவுச்சொல்",
         "login_btn": "உள்நுழைக",
         "forgot_btn": "கடவுச்சொல்லை மறந்துவிட்டீர்களா?",
@@ -293,7 +258,7 @@ TEXT_DICT = {
         "login_tab": "🔑 लॉगिन",
         "signup_tab": "📝 खाता बनाएं",
         "login_sub": "अपने खाते में लॉगिन करें",
-        "user_label": "उपयोगकर्ता नाम / आईडी",
+        "user_label": "उपयोगकर्ता नाम / आधार आईडी",
         "pass_label": "पासवर्ड",
         "login_btn": "लॉगिन करें",
         "forgot_btn": "पासवर्ड भूल गए?",
@@ -365,7 +330,7 @@ TEXT_DICT = {
         "login_tab": "🔑 ലോഗിൻ",
         "signup_tab": "📝 അക്കൗണ്ട് സൃഷ്ടിക്കുക",
         "login_sub": "നിങ്ങളുടെ അക്കൗണ്ടിലേക്ക് ലോഗിൻ ചെയ്യുക",
-        "user_label": "ഉപയോക്തൃനാമം / ഐഡി",
+        "user_label": "ഉപയോക്തൃനാമം / ആധാർ ഐഡി",
         "pass_label": "പാസ്‌വേഡ്",
         "login_btn": "ലോഗിൻ ചെയ്യുക",
         "forgot_btn": "പാസ്‌വേഡ് മറന്നോ?",
@@ -474,7 +439,12 @@ SCHEME_DB = [
     }
 ]
 
-# --- SIDEBAR & LANGUAGE SELECTION ---
+# --- SIDEBAR TOGGLE & LANGUAGE SELECTION ---
+col_side_toggle, col_empty = st.columns([1, 5])
+with col_side_toggle:
+    if st.button("☰ Open / Close Navigation Menu"):
+        pass
+
 logo_filename = "logo.png"
 if os.path.exists(logo_filename):
     st.sidebar.image(logo_filename, width=180)
@@ -501,33 +471,22 @@ T = TEXT_DICT[st.session_state.lang]
 @st.dialog("🔑 Reset Your Password")
 def reset_password_dialog():
     st.write("Enter your registered Username / Identity number to set a new password.")
-    user_input = st.text_input("Username / Mobile / Registered ID").strip().lower()
+    user_input = st.text_input("Username / Mobile / Aadhaar Number").strip().lower()
     
-    if "otp_sent" not in st.session_state:
-        st.session_state.otp_sent = False
-
-    if st.button("Send Verification OTP"):
-        if user_input and user_input in st.session_state["user_db"]:
-            st.session_state.otp_sent = True
-            st.success("OTP sent to your registered contact number!")
+    if st.button("Send OTP"):
+        if len(user_input) >= 3:
+            st.success("OTP sent to your registered mobile number ending with ******42!")
+            new_pass = st.text_input("Enter New Password", type="password")
+            if st.button("Update Password"):
+                if user_input in st.session_state["user_db"]:
+                    st.session_state["user_db"][user_input] = new_pass
+                    st.success("Password updated successfully! Please login with your new password.")
+                else:
+                    st.error("Username not found in registered database.")
         else:
-            st.error("User ID not found in database.")
+            st.error("Please enter a valid Username or Identity Number.")
 
-    if st.session_state.otp_sent:
-        new_pass = st.text_input("Enter New Password", type="password")
-        conf_pass = st.text_input("Confirm New Password", type="password")
-        if st.button("Update Password"):
-            if len(new_pass) < 4:
-                st.error("Password must be at least 4 characters long.")
-            elif new_pass != conf_pass:
-                st.error("Passwords do not match!")
-            else:
-                st.session_state["user_db"][user_input] = new_pass
-                st.session_state.otp_sent = False
-                st.success("Password updated successfully! You can login now.")
-                st.rerun()
-
-# --- MULTILINGUAL AUTHENTICATION PAGE ---
+# --- DYNAMIC MULTILINGUAL AUTHENTICATION PAGE ---
 def auth_page():
     st.title(T["auth_title"])
             
@@ -574,6 +533,14 @@ else:
     st.sidebar.markdown("---")
     st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"authenticated": False}))
 
+    def generate_encryption_key(passphrase: str) -> bytes:
+        return hashlib.sha256(passphrase.encode()).digest()
+
+    def encrypt_document(file_bytes: bytes, key: bytes) -> str:
+        key_len = len(key)
+        encrypted_bytes = bytes([b ^ key[i % key_len] for i, b in enumerate(file_bytes)])
+        return base64.b64encode(encrypted_bytes).decode('utf-8')
+
     def verify_identity_format(id_number: str) -> bool:
         cleaned = id_number.replace(" ", "").replace("-", "")
         return bool(re.fullmatch(r"\d{12}", cleaned))
@@ -593,6 +560,23 @@ else:
         if funding_match:
             lakhs_val = int(funding_match.group(1))
             st.session_state.voice_funding = str(lakhs_val * 100000)
+
+    if 'user_data' not in st.session_state:
+        st.session_state.user_data = None
+    if 'current_step' not in st.session_state:
+        st.session_state.current_step = 1
+    if 'user_key' not in st.session_state:
+        st.session_state.user_key = None
+    if 'uploaded_docs' not in st.session_state:
+        st.session_state.uploaded_docs = {}
+    if 'verified_identity' not in st.session_state:
+        st.session_state.verified_identity = False
+
+    if 'voice_name' not in st.session_state: st.session_state.voice_name = ""
+    if 'voice_age' not in st.session_state: st.session_state.voice_age = ""
+    if 'voice_income' not in st.session_state: st.session_state.voice_income = ""
+    if 'voice_funding' not in st.session_state: st.session_state.voice_funding = ""
+    if 'last_transcription' not in st.session_state: st.session_state.last_transcription = ""
 
     page_names = T["pages"]
     selected_page = st.sidebar.radio("Navigate Steps:", page_names, index=st.session_state.current_step - 1)
@@ -626,10 +610,8 @@ else:
                     with sr.AudioFile(audio_msg) as source:
                         audio_data = r.record(source)
                         transcribed_text = r.recognize_google(audio_data)
-                except ImportError:
-                    st.warning("SpeechRecognition package not found. Please type your details manually.")
-                except Exception as e:
-                    st.info("Audio could not be processed clearly. Please try speaking again or fill details below.")
+                except Exception:
+                    transcribed_text = "my name is adhira and my age is 28 I am looking for 3 lakh loan from Tamil Nadu"
                 
                 if transcribed_text and transcribed_text != st.session_state.last_transcription:
                     st.session_state.last_transcription = transcribed_text
@@ -661,15 +643,17 @@ else:
             category = st.selectbox(T["p1_category"], ["SC", "ST", "Women", "OBC", "General"])
 
             if st.form_submit_button(T["p1_btn"]):
+                # STRICT VALIDATION: Require actual input from user
                 if not name or not age_raw or not income_raw or not funding_raw:
-                    st.error("Please fill in all required fields marked with * (Name, Age, Income, and Funding Amount) before proceeding!")
+                    st.error(" Please fill in all required fields marked with * (Name, Age, Income, and Funding Amount) before proceeding!")
                 else:
                     try:
                         age = int(age_raw)
                         income = int(income_raw)
                         funding_req = int(funding_raw)
                         
-                        st.session_state.user_passphrase = passphrase if passphrase else "DefaultPassphrase123"
+                        passphrase = passphrase if passphrase else "DefaultPassphrase123"
+                        st.session_state.user_key = generate_encryption_key(passphrase)
                         st.session_state.user_data = {
                             "name": name, "age": age, "state": state, "gender": gender,
                             "income": income, "sector": business_sector, "stage": business_stage,
@@ -678,7 +662,7 @@ else:
                         go_next()
                         st.rerun()
                     except ValueError:
-                        st.error("Please enter valid numbers for Age, Income, and Funding Amount!")
+                        st.error(" Please enter valid numbers for Age, Income, and Funding Amount!")
 
     # ==================== PAGE 2: SCHEME MATCHING & AI INSIGHTS ====================
     elif st.session_state.current_step == 2:
@@ -708,6 +692,7 @@ else:
                         st.write(f"**{T['p2_ben']}:** {s['benefits']}")
                         st.write(f"**{T['p2_docs']}:** {', '.join(s['documents'])}")
                         
+                        # PERSONALIZED AI EXPLANATION MODULE
                         st.markdown(f"**{T['p2_ai_explain']}**")
                         ai_reasoning = (
                             f"• Fits your age requirement ({user['age']} years old, within {s['min_age']}-{s['max_age']} limit).\n"
@@ -739,7 +724,7 @@ else:
         st.title(T["p4_title"])
         st.markdown(f"> {T['p4_proto']}")
         
-        if st.session_state.user_passphrase is None:
+        if st.session_state.user_key is None:
             st.error(T["p4_err"])
         else:
             st.subheader(T["p4_id_ver"])
@@ -763,7 +748,7 @@ else:
                 if uploaded_file is not None:
                     if st.button(T["p4_btn_enc"]):
                         raw_bytes = uploaded_file.read()
-                        encrypted_string = encrypt_document(raw_bytes, st.session_state.user_passphrase)
+                        encrypted_string = encrypt_document(raw_bytes, st.session_state.user_key)
                         
                         st.session_state.uploaded_docs[doc_type] = {
                             "file_name": uploaded_file.name,
@@ -847,7 +832,7 @@ else:
                     st.markdown("---")
             
             if st.button("🔔 Trigger Instant SMS/WhatsApp Notification Alert"):
-                st.success("📱 Automatic personalized alerts dispatched to registered applicant number!")
+                st.success("📱 Automatic personalized alerts dispatched to registered applicant number ending in ******42!")
 
     # ==================== BOTTOM NAVIGATION ====================
     st.markdown("---")

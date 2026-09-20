@@ -107,6 +107,7 @@ import hashlib
 import base64
 import re
 import os
+import io
 
 # 3. AUTHENTICATION SESSION STATE & USER DATABASE
 if "user_db" not in st.session_state:
@@ -119,7 +120,7 @@ if "authenticated" not in st.session_state:
 @st.dialog("🔑 Reset Your Password")
 def reset_password_dialog():
     st.write("Enter your registered Username / Identity number to set a new password.")
-    user_input = st.text_input("Username / Mobile / Aadhaar Number").strip().lower()
+    user_input = st.text_input("Username / Mobile / Identity Number").strip().lower()
     
     if st.button("Send OTP"):
         if len(user_input) >= 3:
@@ -143,7 +144,7 @@ def auth_page():
     # --- LOGIN TAB ---
     with tab1:
         st.subheader("Login to Your Account")
-        username = st.text_input("Username / Name / Aadhaar ID", key="login_user").strip().lower()
+        username = st.text_input("Username / Name / Identity ID", key="login_user").strip().lower()
         password = st.text_input("Password", type="password", key="login_pass").strip()
         
         col1, col2 = st.columns([1, 1])
@@ -198,21 +199,53 @@ else:
         cleaned = id_number.replace(" ", "").replace("-", "")
         return bool(re.fullmatch(r"\d{12}", cleaned))
 
+    # ---------------- DYNAMIC VOICE PARSING ENGINE ----------------
     def parse_voice_text(text: str):
         text_lower = text.lower()
         
-        name_match = re.search(r"name is ([a-zA-Z]+)", text_lower)
+        # Extract Name
+        name_match = re.search(r"(?:my name is|i am|this is)\s+([a-zA-Z]+)", text_lower)
         if name_match:
             st.session_state.voice_name = name_match.group(1).capitalize()
             
-        age_match = re.search(r"age is (\d+)", text_lower) or re.search(r"(\d+) years old", text_lower)
+        # Extract Age
+        age_match = re.search(r"(?:age is|i am|aged?)\s*(\d+)", text_lower) or re.search(r"(\d+)\s*years?\s*old", text_lower)
         if age_match:
             st.session_state.voice_age = age_match.group(1)
             
-        funding_match = re.search(r"(\d+)\s*(lakh|lakhs|lac|lacs)", text_lower)
+        # Extract Funding Needed (Lakhs, Crores, or Raw Numbers)
+        funding_match = re.search(r"(?:looking for|need|required?|funding of|loan of)?\s*(\d+)\s*(lakh|lakhs|lac|lacs|cr|crore|crores)?\s*(?:loan|funding|rupees|rs)?", text_lower)
         if funding_match:
-            lakhs_val = int(funding_match.group(1))
-            st.session_state.voice_funding = str(lakhs_val * 100000)
+            val = int(funding_match.group(1))
+            unit = funding_match.group(2)
+            if unit in ["lakh", "lakhs", "lac", "lacs"]:
+                val *= 100000
+            elif unit in ["cr", "crore", "crores"]:
+                val *= 10000000
+            st.session_state.voice_funding = str(val)
+
+        # Extract Income
+        income_match = re.search(r"(?:income|earning|salary)(?: is)?\s*(\d+)\s*(lakh|lakhs|lac|lacs)?", text_lower)
+        if income_match:
+            inc_val = int(income_match.group(1))
+            inc_unit = income_match.group(2)
+            if inc_unit in ["lakh", "lakhs", "lac", "lacs"]:
+                inc_val *= 100000
+            st.session_state.voice_income = str(inc_val)
+
+        # Extract State
+        states = ["Tamil Nadu", "Maharashtra", "Delhi", "Karnataka"]
+        for s in states:
+            if s.lower() in text_lower:
+                st.session_state.voice_state = s
+                break
+
+        # Extract Business Sector
+        sectors = ["Manufacturing", "Services", "Trading", "Agriculture"]
+        for sec in sectors:
+            if sec.lower() in text_lower:
+                st.session_state.voice_sector = sec
+                break
 
     # ---------------- INITIALIZE SESSION STATE ----------------
     if 'user_data' not in st.session_state:
@@ -232,6 +265,8 @@ else:
     if 'voice_age' not in st.session_state: st.session_state.voice_age = ""
     if 'voice_income' not in st.session_state: st.session_state.voice_income = ""
     if 'voice_funding' not in st.session_state: st.session_state.voice_funding = ""
+    if 'voice_state' not in st.session_state: st.session_state.voice_state = "Tamil Nadu"
+    if 'voice_sector' not in st.session_state: st.session_state.voice_sector = "Manufacturing"
     if 'last_transcription' not in st.session_state: st.session_state.last_transcription = ""
 
     # Mock Scheme Database
@@ -556,12 +591,23 @@ else:
                 transcribed_text = ""
                 try:
                     import speech_recognition as sr
+                    from pydub import AudioSegment
+
+                    # Convert audio bytes into standard WAV format
+                    audio_bytes = audio_msg.read()
+                    sound = AudioSegment.from_file(io.BytesIO(audio_bytes))
+                    wav_io = io.BytesIO()
+                    sound.export(wav_io, format="wav")
+                    wav_io.seek(0)
+
                     r = sr.Recognizer()
-                    with sr.AudioFile(audio_msg) as source:
+                    with sr.AudioFile(wav_io) as source:
                         audio_data = r.record(source)
                         transcribed_text = r.recognize_google(audio_data)
-                except Exception:
-                    transcribed_text = "my name is adhira and my age is 28 I am looking for 3 lakh loan from Tamil Nadu"
+
+                except Exception as e:
+                    st.error("Could not process audio clearly. Please try speaking into the microphone again.")
+                    transcribed_text = ""
                 
                 if transcribed_text and transcribed_text != st.session_state.last_transcription:
                     st.session_state.last_transcription = transcribed_text
@@ -579,11 +625,18 @@ else:
 
             st.subheader(T["p1_pers_sub"])
             col1, col2 = st.columns(2)
+            
+            state_opts = ["Tamil Nadu", "Maharashtra", "Delhi", "Karnataka", "Other"]
+            sector_opts = ["Manufacturing", "Services", "Trading", "Agriculture"]
+            
+            state_idx = state_opts.index(st.session_state.voice_state) if st.session_state.voice_state in state_opts else 0
+            sector_idx = sector_opts.index(st.session_state.voice_sector) if st.session_state.voice_sector in sector_opts else 0
+
             with col1:
                 name = st.text_input(T["p1_name"], value=st.session_state.voice_name, placeholder=T["p1_name_ph"])
                 age_raw = st.text_input(T["p1_age"], value=st.session_state.voice_age, placeholder=T["p1_age_ph"])
-                state = st.selectbox(T["p1_state"], ["Tamil Nadu", "Maharashtra", "Delhi", "Karnataka", "Other"])
-                business_sector = st.selectbox(T["p1_sector"], ["Manufacturing", "Services", "Trading", "Agriculture"])
+                state = st.selectbox(T["p1_state"], state_opts, index=state_idx)
+                business_sector = st.selectbox(T["p1_sector"], sector_opts, index=sector_idx)
             with col2:
                 gender = st.selectbox(T["p1_gender"], ["Female", "Male", "Other"])
                 income_raw = st.text_input(T["p1_income"], value=st.session_state.voice_income, placeholder=T["p1_income_ph"])
@@ -596,20 +649,14 @@ else:
                 passphrase = passphrase if passphrase else "DefaultPassphrase123"
                 name = name if name else "Applicant"
                 
-                try:
-                    age = int(age_raw) if age_raw else 28
-                except ValueError:
-                    age = 28
+                try: age = int(age_raw) if age_raw else 28
+                except ValueError: age = 28
                     
-                try:
-                    income = int(income_raw) if income_raw else 250000
-                except ValueError:
-                    income = 250000
+                try: income = int(income_raw) if income_raw else 250000
+                except ValueError: income = 250000
                     
-                try:
-                    funding_req = int(funding_raw) if funding_raw else 300000
-                except ValueError:
-                    funding_req = 300000
+                try: funding_req = int(funding_raw) if funding_raw else 300000
+                except ValueError: funding_req = 300000
 
                 st.session_state.user_key = generate_encryption_key(passphrase)
                 st.session_state.user_data = {

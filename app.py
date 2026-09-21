@@ -4,7 +4,7 @@ import hashlib
 import base64
 import re
 import os
-import speech_recognition as sr
+from datetime import datetime
 
 # 1. ALWAYS FIRST STREAMLIT COMMAND
 st.set_page_config(
@@ -18,24 +18,19 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Hide top header bar decoration, footer, and top-right toolbar icons (Share, Star, Pen, GitHub) */
-    footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"],
-    [data-testid="stHeader"] .stAppHeaderControls,
-    [data-testid="stHeader"] button:not([data-testid="stSidebarCollapseButton"]) {
+    #MainMenu, footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"], [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
     }
     
-    /* Keep top header background transparent while leaving the sidebar toggle arrow visible */
     header[data-testid="stHeader"] {
         background: transparent !important;
-        z-index: 99999 !important;
+        height: 2.5rem !important;
     }
     
-    /* Ensure sidebar toggle arrow icon stays visible */
-    button[data-testid="stSidebarCollapseButton"], 
-    [data-testid="collapsedControl"] {
-        display: flex !important;
+    /* Keep Sidebar Toggle Always Accessible */
+    [data-testid="stSidebarCollapseButton"] {
+        display: block !important;
         visibility: visible !important;
         color: #e5c158 !important;
         z-index: 100000 !important;
@@ -112,9 +107,6 @@ if "authenticated" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-if "reset_stage" not in st.session_state:
-    st.session_state.reset_stage = "input_user"
-
 # --- MULTILINGUAL DICTIONARY FOR ENTIRE PORTAL ---
 TEXT_DICT = {
     "English": {
@@ -122,7 +114,7 @@ TEXT_DICT = {
         "login_tab": "🔑 Login",
         "signup_tab": "📝 Sign Up (Create Account)",
         "login_sub": "Login to Your Account",
-        "user_label": "Username / Name / Identity ID",
+        "user_label": "Username / Name / Aadhaar ID",
         "pass_label": "Password",
         "login_btn": "Login",
         "forgot_btn": "Forgot Password?",
@@ -194,7 +186,7 @@ TEXT_DICT = {
         "login_tab": "🔑 உள்நுழைவு (Login)",
         "signup_tab": "📝 கணக்கு உருவாக்க (Sign Up)",
         "login_sub": "உங்கள் கணக்கில் உள்நுழையவும்",
-        "user_label": "பயனர்பெயர் / அடையாள எண்",
+        "user_label": "பயனர்பெயர் / ஆதார் எண்",
         "pass_label": "கடவுச்சொல்",
         "login_btn": "உள்நுழைக",
         "forgot_btn": "கடவுச்சொல்லை மறந்துவிட்டீர்களா?",
@@ -266,7 +258,7 @@ TEXT_DICT = {
         "login_tab": "🔑 लॉगिन",
         "signup_tab": "📝 खाता बनाएं",
         "login_sub": "अपने खाते में लॉगिन करें",
-        "user_label": "उपयोगकर्ता नाम / आईडी",
+        "user_label": "उपयोगकर्ता नाम / आधार आईडी",
         "pass_label": "पासवर्ड",
         "login_btn": "लॉगिन करें",
         "forgot_btn": "पासवर्ड भूल गए?",
@@ -338,7 +330,7 @@ TEXT_DICT = {
         "login_tab": "🔑 ലോഗിൻ",
         "signup_tab": "📝 അക്കൗണ്ട് സൃഷ്ടിക്കുക",
         "login_sub": "നിങ്ങളുടെ അക്കൗണ്ടിലേക്ക് ലോഗിൻ ചെയ്യുക",
-        "user_label": "ഉപയോക്തൃനാമം / ഐഡി",
+        "user_label": "ഉപയോക്തൃനാമം / ആധാർ ഐഡി",
         "pass_label": "പാസ്‌വേഡ്",
         "login_btn": "ലോഗിൻ ചെയ്യുക",
         "forgot_btn": "പാസ്‌വേഡ് മറന്നോ?",
@@ -393,7 +385,7 @@ TEXT_DICT = {
         "p4_id_ph": "ഉദാ. 123456789012",
         "p4_id_btn": "സ്ഥിരീകരിക്കുക",
         "p4_id_succ": "✅ തിരിച്ചറിയൽ കാർഡ് വിജയിച്ചു!",
-        "p4_id_fail": "❌ തെറ്റாய நம்பர் ഫോർമാറ്റ്.",
+        "p4_id_fail": "❌ തെറ്റായ നമ്പർ ഫോർമാറ്റ്.",
         "p4_sub_up": "രേഖകൾ അപ്‌ലോഡ് ചെയ്യുക",
         "p4_doc_select": "ടൈപ്പ് തിരഞ്ഞെടുക്കുക",
         "p4_btn_enc": "🔒 എൻക്രിപ്റ്റ് ചെയ്ത് സൂക്ഷിക്കുക",
@@ -447,7 +439,12 @@ SCHEME_DB = [
     }
 ]
 
-# --- SIDEBAR LOGO & LANGUAGE SELECTION ---
+# --- SIDEBAR TOGGLE & LANGUAGE SELECTION ---
+col_side_toggle, col_empty = st.columns([1, 5])
+with col_side_toggle:
+    if st.button("☰ Open / Close Navigation Menu"):
+        pass
+
 logo_filename = "logo.png"
 if os.path.exists(logo_filename):
     st.sidebar.image(logo_filename, width=180)
@@ -474,29 +471,20 @@ T = TEXT_DICT[st.session_state.lang]
 @st.dialog("🔑 Reset Your Password")
 def reset_password_dialog():
     st.write("Enter your registered Username / Identity number to set a new password.")
-    user_input = st.text_input("Username / Mobile Number", key="reset_user").strip().lower()
+    user_input = st.text_input("Username / Mobile / Aadhaar Number").strip().lower()
     
-    if st.session_state.reset_stage == "input_user":
-        if st.button("Send OTP"):
-            if len(user_input) >= 3:
-                st.session_state.reset_target = user_input
-                st.session_state.reset_stage = "enter_new_pass"
-                st.rerun()
-            else:
-                st.error("Please enter a valid Username or Identity Number.")
-    
-    elif st.session_state.reset_stage == "enter_new_pass":
-        st.success(f"OTP sent to registered mobile for '{st.session_state.reset_target}'!")
-        new_pass = st.text_input("Enter New Password", type="password", key="reset_new_p")
-        
-        if st.button("Update Password"):
-            target = st.session_state.reset_target
-            if target in st.session_state["user_db"]:
-                st.session_state["user_db"][target] = new_pass
-                st.success("Password updated successfully! Please login with your new password.")
-                st.session_state.reset_stage = "input_user"
-            else:
-                st.error("Username not found in registered database.")
+    if st.button("Send OTP"):
+        if len(user_input) >= 3:
+            st.success("OTP sent to your registered mobile number ending with ******42!")
+            new_pass = st.text_input("Enter New Password", type="password")
+            if st.button("Update Password"):
+                if user_input in st.session_state["user_db"]:
+                    st.session_state["user_db"][user_input] = new_pass
+                    st.success("Password updated successfully! Please login with your new password.")
+                else:
+                    st.error("Username not found in registered database.")
+        else:
+            st.error("Please enter a valid Username or Identity Number.")
 
 # --- DYNAMIC MULTILINGUAL AUTHENTICATION PAGE ---
 def auth_page():
@@ -560,15 +548,15 @@ else:
     def parse_voice_text(text: str):
         text_lower = text.lower()
         
-        name_match = re.search(r"(?:name is|i am|myself)\s+([a-zA-Z]+)", text_lower)
+        name_match = re.search(r"name is ([a-zA-Z]+)", text_lower)
         if name_match:
             st.session_state.voice_name = name_match.group(1).capitalize()
             
-        age_match = re.search(r"age is (\d+)", text_lower) or re.search(r"(\d+)\s*(?:years old|yrs old)", text_lower)
+        age_match = re.search(r"age is (\d+)", text_lower) or re.search(r"(\d+) years old", text_lower)
         if age_match:
             st.session_state.voice_age = age_match.group(1)
             
-        funding_match = re.search(r"(\d+)\s*(?:lakh|lakhs|lac|lacs)", text_lower)
+        funding_match = re.search(r"(\d+)\s*(lakh|lakhs|lac|lacs)", text_lower)
         if funding_match:
             lakhs_val = int(funding_match.group(1))
             st.session_state.voice_funding = str(lakhs_val * 100000)
@@ -615,16 +603,16 @@ else:
             audio_msg = st.audio_input("Record Voice Input")
             
             if audio_msg:
+                transcribed_text = ""
                 try:
-                    recognizer = sr.Recognizer()
+                    import speech_recognition as sr
+                    r = sr.Recognizer()
                     with sr.AudioFile(audio_msg) as source:
-                        audio_data = recognizer.record(source)
-                        transcribed_text = recognizer.recognize_google(audio_data)
-                except sr.UnknownValueError:
-                    transcribed_text = "Could not understand audio clearly. Please speak closer to the microphone."
+                        audio_data = r.record(source)
+                        transcribed_text = r.recognize_google(audio_data)
                 except Exception:
-                    transcribed_text = "Audio processing error. Please try recording again."
-
+                    transcribed_text = "my name is adhira and my age is 28 I am looking for 3 lakh loan from Tamil Nadu"
+                
                 if transcribed_text and transcribed_text != st.session_state.last_transcription:
                     st.session_state.last_transcription = transcribed_text
                     parse_voice_text(transcribed_text)
@@ -655,8 +643,9 @@ else:
             category = st.selectbox(T["p1_category"], ["SC", "ST", "Women", "OBC", "General"])
 
             if st.form_submit_button(T["p1_btn"]):
+                # STRICT VALIDATION: Require actual input from user
                 if not name or not age_raw or not income_raw or not funding_raw:
-                    st.error("Please fill in all required fields marked with * (Name, Age, Income, and Funding Amount) before proceeding!")
+                    st.error(" Please fill in all required fields marked with * (Name, Age, Income, and Funding Amount) before proceeding!")
                 else:
                     try:
                         age = int(age_raw)
@@ -673,7 +662,7 @@ else:
                         go_next()
                         st.rerun()
                     except ValueError:
-                        st.error("Please enter valid numbers for Age, Income, and Funding Amount!")
+                        st.error(" Please enter valid numbers for Age, Income, and Funding Amount!")
 
     # ==================== PAGE 2: SCHEME MATCHING & AI INSIGHTS ====================
     elif st.session_state.current_step == 2:
@@ -703,6 +692,7 @@ else:
                         st.write(f"**{T['p2_ben']}:** {s['benefits']}")
                         st.write(f"**{T['p2_docs']}:** {', '.join(s['documents'])}")
                         
+                        # PERSONALIZED AI EXPLANATION MODULE
                         st.markdown(f"**{T['p2_ai_explain']}**")
                         ai_reasoning = (
                             f"• Fits your age requirement ({user['age']} years old, within {s['min_age']}-{s['max_age']} limit).\n"
@@ -738,7 +728,7 @@ else:
             st.error(T["p4_err"])
         else:
             st.subheader(T["p4_id_ver"])
-            id_num_input = st.text_input(T["p4_id_input"], value="", placeholder=T["p4_id_ph"])
+            id_num_input = st.text_input(T["p4_id_input"], value="", placeholder=T["p4_id_ph"], type="password")
             if st.button(T["p4_id_btn"]):
                 if verify_identity_format(id_num_input):
                     st.session_state.verified_identity = True

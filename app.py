@@ -18,7 +18,7 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Hide top header bar decoration, footer, and toolbar icons (Share, Star, Pen, GitHub) */
+    /* Hide top header bar decoration, footer, and top-right icons (Share, Star, Pen, GitHub) */
     footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"],
     [data-testid="stHeader"] .stAppHeaderControls,
     [data-testid="stHeader"] button:not([data-testid="stSidebarCollapseButton"]) {
@@ -620,8 +620,10 @@ else:
                     with sr.AudioFile(audio_msg) as source:
                         audio_data = recognizer.record(source)
                         transcribed_text = recognizer.recognize_google(audio_data)
+                except sr.UnknownValueError:
+                    transcribed_text = "Could not understand audio. Please speak clearly into the microphone."
                 except Exception:
-                    transcribed_text = "Could not process audio clearly. Please try speaking into the microphone again."
+                    transcribed_text = "Audio processing error. Please try recording again."
 
                 if transcribed_text and transcribed_text != st.session_state.last_transcription:
                     st.session_state.last_transcription = transcribed_text

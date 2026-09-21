@@ -18,7 +18,7 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Hide top header bar decoration, footer, and top-right icons (Share, Star, Pen, GitHub) */
+    /* Hide top header bar decoration, footer, and top-right toolbar icons (Share, Star, Pen, GitHub) */
     footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"],
     [data-testid="stHeader"] .stAppHeaderControls,
     [data-testid="stHeader"] button:not([data-testid="stSidebarCollapseButton"]) {
@@ -393,7 +393,7 @@ TEXT_DICT = {
         "p4_id_ph": "ഉദാ. 123456789012",
         "p4_id_btn": "സ്ഥിരീകരിക്കുക",
         "p4_id_succ": "✅ തിരിച്ചറിയൽ കാർഡ് വിജയിച്ചു!",
-        "p4_id_fail": "❌ തെറ്റായ നമ്പർ ഫോർമാറ്റ്.",
+        "p4_id_fail": "❌ തെറ്റாய நம்பர் ഫോർമാറ്റ്.",
         "p4_sub_up": "രേഖകൾ അപ്‌ലോഡ് ചെയ്യുക",
         "p4_doc_select": "ടൈപ്പ് തിരഞ്ഞെടുക്കുക",
         "p4_btn_enc": "🔒 എൻക്രിപ്റ്റ് ചെയ്ത് സൂക്ഷിക്കുക",

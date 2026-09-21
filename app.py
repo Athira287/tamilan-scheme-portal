@@ -621,7 +621,7 @@ else:
                         audio_data = recognizer.record(source)
                         transcribed_text = recognizer.recognize_google(audio_data)
                 except sr.UnknownValueError:
-                    transcribed_text = "Could not understand audio. Please speak clearly into the microphone."
+                    transcribed_text = "Could not understand audio clearly. Please speak closer to the microphone."
                 except Exception:
                     transcribed_text = "Audio processing error. Please try recording again."
 

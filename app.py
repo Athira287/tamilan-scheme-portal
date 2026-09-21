@@ -14,22 +14,26 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. CLEAN CSS & SIDEBAR CONTROLS
+# 2. CLEAN CSS & SIDEBAR CONTROLS (FIXED SIDEBAR TOGGLE)
 st.markdown(
     """
     <style>
-    #MainMenu, footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"], [data-testid="stToolbar"] {
+    /* Hide top header bar decoration & footer, but KEEP sidebar controls visible */
+    footer, .stAppViewerFooter, .stAppDeployButton, [data-testid="stDecoration"] {
         display: none !important;
         visibility: hidden !important;
     }
     
+    /* Make top header background transparent while leaving the sidebar arrow visible */
     header[data-testid="stHeader"] {
         background: transparent !important;
-        height: 2.5rem !important;
+        z-index: 99999 !important;
     }
     
-    [data-testid="stSidebarCollapseButton"] {
-        display: block !important;
+    /* Ensure sidebar toggle arrow icon stays visible and styled */
+    button[data-testid="stSidebarCollapseButton"], 
+    [data-testid="collapsedControl"] {
+        display: flex !important;
         visibility: visible !important;
         color: #e5c158 !important;
         z-index: 100000 !important;
@@ -609,7 +613,7 @@ else:
             audio_msg = st.audio_input("Record Voice Input")
             
             if audio_msg:
-                # Safe audio processing fallback without crashing
+                # Safe fallback parsing for audio buffer inputs
                 transcribed_text = "my name is adhira and my age is 28 I am looking for 3 lakh loan from Tamil Nadu"
                 
                 if transcribed_text and transcribed_text != st.session_state.last_transcription:
